@@ -26,18 +26,27 @@ Ardından örnek ortam değişkenlerini kopyalayın ve kendi Supabase proje bilg
 cp .env.example .env.local
 ```
 
-`.env.local` dosyasındaki `ALLOWED_USER_EMAILS` alanına yalnızca uygulamayı kullanacak iki e-posta adresini virgülle ayırarak ekleyin. `APP_OWNER_EMAIL`, bu iki kişiden `owner` rolüne sahip olanın adresidir; diğeri otomatik olarak `partner` olur.
-
 ## Supabase kurulumu ve giriş
 
 1. [Supabase Dashboard](https://supabase.com/dashboard) üzerinde bir proje oluşturun.
 2. **Connect** ekranından proje URL'sini ve publishable key'i alın. Eski projelerde anon key de kullanılabilir.
 3. Bu değerleri sırasıyla `NEXT_PUBLIC_SUPABASE_URL` ve `NEXT_PUBLIC_SUPABASE_ANON_KEY` olarak `.env.local` dosyasına ekleyin.
-4. Dashboard'da **Authentication > Providers > Email** ayarından yeni kullanıcı kayıtlarını kapatın.
-5. **Authentication > Users** üzerinden iki kullanıcıyı e-posta/şifre ile manuel oluşturun. Bu e-postalar `ALLOWED_USER_EMAILS` ile birebir eşleşmelidir.
-6. **Authentication > URL Configuration** içinde yerel geliştirme adresini (`http://localhost:3000`) ve production domain'inizi izinli yönlendirme adresleri olarak ekleyin.
+4. Dashboard'da **Authentication > Providers > Email** ayarından yeni kullanıcı kayıtlarına izin verildiğinden emin olun (uygulama artık açık kayıt kullanır). İsteğe bağlı olarak e-posta onayını kapatırsanız kayıt sonrası oturum anında açılır; açık bırakırsanız kullanıcı onay bağlantısına tıkladıktan sonra giriş yapar.
+5. **Authentication > URL Configuration** içinde yerel geliştirme adresini (`http://localhost:3000`) ve production domain'inizi izinli yönlendirme adresleri olarak ekleyin.
 
-Uygulama, Supabase SSR cookie tabanlı session yönetimini kullanır. Middleware her istekte oturumu yeniler; giriş yapmamış veya izinli listede olmayan kullanıcıları `/login` sayfasına yönlendirir. İzinli e-posta listesi yalnızca sunucu ortam değişkeninden okunur ve tarayıcıya gönderilmez.
+Uygulama, Supabase SSR cookie tabanlı session yönetimini kullanır. Middleware her istekte oturumu yeniler; giriş yapmamış kullanıcıları `/login` sayfasına yönlendirir. Kimliği doğrulanmış ama henüz bir çifte katılmamış kullanıcılar `/onboarding` sayfasına yönlendirilir.
+
+### Açık kayıt ve davet kodu ile eşleşme
+
+Önceki kapalı mimaride (`ALLOWED_USER_EMAILS` / `APP_OWNER_EMAIL`) yalnızca dashboard'dan manuel oluşturulan iki hesap giriş yapabiliyordu. Artık uygulama herkese açık:
+
+1. `/kayit` sayfasından herhangi biri e-posta/şifre ile kayıt olabilir.
+2. İlk kez giriş yapan (henüz bir çifte ait olmayan) kullanıcı otomatik olarak `/onboarding`'e yönlendirilir.
+3. Onboarding'de **"Yeni çift oluştur"** seçilirse: ad ve isteğe bağlı avatar girilir, `create_couple_and_profile` RPC'si yeni bir `couples` satırı ve benzersiz bir davet kodu üretir, kullanıcı `owner` rolüyle kaydedilir.
+4. Partner, bu kodu **"Davet koduyla katıl"** seçeneğinde girerek `join_couple_by_code` RPC'si ile aynı çifte `partner` rolüyle katılır.
+5. Bir çiftte en fazla iki profil olabilir; RPC bunu sunucu tarafında zorunlu kılar. Davet kodu geçersizse veya çift zaten doluysa kullanıcıya anlaşılır bir hata gösterilir.
+
+Bu iki RPC `security definer` olarak tanımlıdır: bootstraplama anında kullanıcının henüz `couple_id`'si olmadığından normal RLS politikaları bu adımı gerçekleştiremez; fonksiyonlar gövde içinde kendi güvenlik kontrollerini (tekil profil, kod geçerliliği, üye sayısı sınırı) uygular.
 
 ### Development Login Mode
 
@@ -50,7 +59,7 @@ DEV_DEMO_PARTNER_EMAIL=
 DEV_DEMO_PARTNER_PASSWORD=
 ```
 
-Demo hesapları, geliştirme ortamında izinli kullanıcı listesine otomatik eklenir. Production ortamında demo arayüzü ve demo giriş endpoint'i tamamen devre dışıdır; normal Supabase giriş akışı değişmeden kalır.
+Bu hesapların Supabase'de önceden oluşturulmuş olması ve bir çifte katılmış (yani `profiles` satırına sahip) olması gerekir — aksi hâlde demo girişten sonra da `/onboarding`'e yönlendirilirler. Production ortamında demo arayüzü ve demo giriş endpoint'i tamamen devre dışıdır; normal Supabase giriş/kayıt akışı değişmeden kalır.
 
 ## Database, RLS ve Anılar
 
@@ -69,7 +78,7 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push
 ```
 
-İlk kullanıcı çiftini oluşturmak için [`supabase/seed.example.sql`](/Users/furkan/Documents/AŞK/supabase/seed.example.sql) içindeki UUID ve isimleri Dashboard'daki Auth kullanıcılarınızla değiştirin; ardından SQL Editor'da bir kez çalıştırın. Bu başlangıç kaydı, iki kullanıcının aynı `couple_id` altında güvenli biçimde eşleşmesini sağlar.
+[`supabase/seed.example.sql`](supabase/seed.example.sql) artık zorunlu değildir — `/kayit` ve `/onboarding` üzerinden herkes kendi çiftini oluşturabilir. Dosya yalnızca hızlı yerel test verisi oluşturmak isteyenler için opsiyonel bir kısayol olarak korunmuştur.
 
 Görseller private bucket'ta kalır; uygulama listeleme sırasında kısa süreli signed URL üretir. RLS hem veritabanında hem Storage nesnelerinde yalnızca aynı `couple_id` kapsamındaki erişime izin verir.
 
@@ -269,7 +278,7 @@ Unit testler saf geri sayım hesaplarını, not doğrulamasını ve rate limit d
 
 ### Migration adımları
 
-Beş migration sıralı çalışır: çekirdek şema (`...140000`), notlar (`...150000`), bildirim/etkinlik/geri sayım (`...160000`), bucket list/günlük/time capsule/ayarlar (`...170000`) ve couple/profile ilişkisel bütünlük kısıtları (`...180000`).
+Beş migration sıralı çalışır: çekirdek şema (`...140000`), notlar (`...150000`), bildirim/etkinlik/geri sayım (`...160000`), bucket list/günlük/time capsule/ayarlar (`...170000`) ve açık kayıt/davet kodu ile eşleşme (`...180000`).
 
 ```bash
 npx supabase db push

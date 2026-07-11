@@ -2,25 +2,15 @@ import { Heart } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/components/auth/login-form";
-import { getDevelopmentDemoAccounts } from "@/lib/auth/development-demo";
+import { SignupForm } from "@/components/auth/signup-form";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
-interface LoginPageProps {
-  searchParams: Promise<{ next?: string }>;
-}
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const [user, params] = await Promise.all([getCurrentAppUser(), searchParams]);
+export default async function SignupPage() {
+  const user = await getCurrentAppUser();
 
   if (user) {
     redirect(user.coupleId ? "/" : "/onboarding");
   }
-
-  const nextPath =
-    params.next?.startsWith("/") && !params.next.startsWith("//")
-      ? params.next
-      : "/";
 
   return (
     <main className="mx-auto grid min-h-dvh w-full max-w-md place-items-center px-5 py-10">
@@ -29,22 +19,20 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <Heart className="size-7 fill-current" />
         </span>
         <p className="mt-6 text-sm font-medium text-rose-500">
-          Sadece ikimize özel
+          Aranızda özel bir alan
         </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-800">
-          Bizim Hikâyemiz
+          Kayıt Ol
         </h1>
         <p className="mt-3 text-sm leading-6 text-slate-500">
-          Anılarımıza kaldığımız yerden devam etmek için giriş yap.
+          Hesabını oluştur, ardından çiftini kur ya da partnerinin davet koduyla
+          ona katıl.
         </p>
-        <LoginForm
-          demoAccounts={getDevelopmentDemoAccounts()}
-          nextPath={nextPath}
-        />
+        <SignupForm />
         <p className="mt-5 text-center text-sm text-slate-500">
-          Hesabın yok mu?{" "}
-          <Link className="font-semibold text-rose-500" href="/kayit">
-            Kayıt ol
+          Zaten hesabın var mı?{" "}
+          <Link className="font-semibold text-rose-500" href="/login">
+            Giriş yap
           </Link>
         </p>
       </section>

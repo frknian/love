@@ -16,16 +16,11 @@ import type { DevelopmentDemoAccount, UserRole } from "@/types/auth";
 interface LoginFormProps {
   demoAccounts: DevelopmentDemoAccount[];
   nextPath: string;
-  initialError?: string;
 }
 
-export function LoginForm({
-  demoAccounts,
-  nextPath,
-  initialError,
-}: LoginFormProps) {
+export function LoginForm({ demoAccounts, nextPath }: LoginFormProps) {
   const router = useRouter();
-  const [error, setError] = useState(initialError);
+  const [error, setError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function finishSignIn() {

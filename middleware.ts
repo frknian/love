@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 const LOGIN_PATH = "/login";
+const SIGNUP_PATH = "/kayit";
 const COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
 const COOKIE_CHUNK_SIZE = 3180;
 
@@ -99,38 +100,6 @@ function writeSession(
   );
 }
 
-function clearSession(
-  response: NextResponse,
-  request: NextRequest,
-  cookieName: string,
-) {
-  request.cookies
-    .getAll()
-    .filter(
-      (cookie) =>
-        cookie.name === cookieName || cookie.name.startsWith(`${cookieName}.`),
-    )
-    .forEach((cookie) =>
-      response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 }),
-    );
-}
-
-function isAllowedEmail(email: string | undefined) {
-  if (!email) return false;
-  const allowed = (process.env.ALLOWED_USER_EMAILS ?? "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (process.env.NODE_ENV === "development") {
-    [process.env.DEV_DEMO_OWNER_EMAIL, process.env.DEV_DEMO_PARTNER_EMAIL]
-      .filter((value): value is string => Boolean(value))
-      .forEach((value) => allowed.push(value.trim().toLowerCase()));
-  }
-
-  return allowed.includes(email.trim().toLowerCase());
-}
-
 async function fetchUser(url: string, key: string, accessToken: string) {
   const response = await fetch(`${url}/auth/v1/user`, {
     headers: { apikey: key, Authorization: `Bearer ${accessToken}` },
@@ -192,17 +161,15 @@ export async function middleware(request: NextRequest) {
   };
 
   const isLoginRoute = request.nextUrl.pathname === LOGIN_PATH;
+  const isSignupRoute = request.nextUrl.pathname === SIGNUP_PATH;
   const isDevelopmentLoginRoute =
     process.env.NODE_ENV === "development" &&
     request.nextUrl.pathname === "/api/auth/development-login";
-  const isPublicRoute = isLoginRoute || isDevelopmentLoginRoute;
-  if (user && !isAllowedEmail(user.email)) {
-    clearSession(response, request, cookieName);
-    return redirect(LOGIN_PATH, { error: "access-denied" });
-  }
+  const isPublicRoute =
+    isLoginRoute || isSignupRoute || isDevelopmentLoginRoute;
   if (!user && !isPublicRoute)
     return redirect(LOGIN_PATH, { next: request.nextUrl.pathname });
-  if (user && isLoginRoute) return redirect("/");
+  if (user && (isLoginRoute || isSignupRoute)) return redirect("/");
   return response;
 }
 

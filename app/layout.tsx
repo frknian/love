@@ -44,7 +44,7 @@ export default async function RootLayout({
   const initialTheme: ThemeOption = settings?.theme ?? "system";
 
   return (
-    <html lang="tr">
+    <html lang="tr" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{ __html: noFlashThemeScript(initialTheme) }}

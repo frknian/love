@@ -7,5 +7,5 @@ export async function getCurrentAppUser() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return user ? toAppUser(user) : null;
+  return user ? toAppUser(supabase, user) : null;
 }
