@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 340 100% 98%;
+  --foreground: 340 20% 18%;
+  --muted: 346 48% 94%;
+  --muted-foreground: 340 10% 47%;
+  --card: 0 0% 100%;
+  --primary: 348 78% 62%;
+  --primary-foreground: 0 0% 100%;
+  --border: 345 35% 91%;
+}
+
+.dark {
+  --background: 340 28% 8%;
+  --foreground: 340 25% 92%;
+  --muted: 340 20% 14%;
+  --muted-foreground: 340 10% 65%;
+  --card: 340 22% 12%;
+  --primary: 348 70% 66%;
+  --primary-foreground: 340 28% 8%;
+  --border: 340 18% 20%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  background: hsl(var(--background));
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100dvh;
+  color: hsl(var(--foreground));
+  background:
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(255, 204, 216, 0.65),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(236, 221, 255, 0.55),
+      transparent 28rem
+    ),
+    hsl(var(--background));
+  font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.dark body {
+  background:
+    radial-gradient(
+      circle at 10% 0%,
+      rgba(190, 60, 100, 0.18),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(120, 80, 200, 0.14),
+      transparent 28rem
+    ),
+    hsl(var(--background));
+}
+
+::selection {
+  background: rgba(251, 113, 133, 0.2);
+}

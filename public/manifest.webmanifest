@@ -1,0 +1,46 @@
+{
+  "name": "Bizim Hikâyemiz",
+  "short_name": "Bizim",
+  "id": "/",
+  "description": "Birlikte biriktirdiğiniz güzel anlar için özel alanınız.",
+  "lang": "tr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait",
+  "categories": ["lifestyle", "social"],
+  "background_color": "#fff7f9",
+  "theme_color": "#fff7f9",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Not bırak",
+      "short_name": "Not",
+      "url": "/notlar",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Anılara git",
+      "short_name": "Anılar",
+      "url": "/anilar",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/app-screenshot.svg",
+      "sizes": "720x1280",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Bizim Hikâyemiz ana ekranı"
+    }
+  ]
+}
