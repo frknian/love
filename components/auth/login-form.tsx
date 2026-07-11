@@ -1,6 +1,12 @@
 "use client";
 
-import { LoaderCircle, LockKeyhole, Mail } from "lucide-react";
+import {
+  Crown,
+  HeartHandshake,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+} from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -124,26 +130,47 @@ export function LoginForm({
         {isSubmitting ? "Giriş yapılıyor" : "Giriş Yap"}
       </button>
       {demoAccounts.length ? (
-        <div className="border-t border-rose-100 pt-4">
-          <p className="mb-3 text-center text-xs font-medium uppercase tracking-[0.16em] text-rose-400">
-            Geliştirme hesapları
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50/60 p-3">
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <span className="grid size-7 place-items-center rounded-lg bg-white text-rose-500 shadow-sm">
+              <HeartHandshake aria-hidden="true" className="size-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">
+                Geliştirme modu
+              </p>
+              <p className="text-xs text-slate-500">
+                Test hesabıyla hızlı giriş yap
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2">
             {demoAccounts.map((account) => (
               <button
-                className="rounded-2xl border border-rose-100 bg-rose-50/70 px-3 py-2.5 text-left transition hover:border-rose-200 hover:bg-rose-100/70 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex items-center gap-3 rounded-xl border border-white bg-white px-3.5 py-3 text-left shadow-sm transition hover:border-rose-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSubmitting}
                 key={account.role}
                 onClick={() => handleDevelopmentLogin(account.role)}
                 type="button"
               >
-                <span className="block text-sm font-semibold text-rose-700">
-                  {account.role === "owner"
-                    ? "Login as Owner"
-                    : "Login as Partner"}
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-600">
+                  {account.role === "owner" ? (
+                    <Crown aria-hidden="true" className="size-4" />
+                  ) : (
+                    <HeartHandshake aria-hidden="true" className="size-4" />
+                  )}
                 </span>
-                <span className="mt-0.5 block truncate text-xs text-slate-500">
-                  {account.email}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-slate-700">
+                    {account.role === "owner"
+                      ? "Login as Owner"
+                      : "Login as Partner"}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    {account.role === "owner"
+                      ? "Sahip görünümüyle devam et"
+                      : "Partner görünümüyle devam et"}
+                  </span>
                 </span>
               </button>
             ))}

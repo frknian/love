@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { getDevelopmentDemoCredentials } from "@/lib/auth/development-demo";
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseConfig } from "@/lib/supabase/config";
 import type { UserRole } from "@/types/auth";
 
 const roles: UserRole[] = ["owner", "partner"];
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV !== "development") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -36,7 +37,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  const response = NextResponse.json({ success: true });
+  const { url, key } = getSupabaseConfig();
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options),
+        );
+      },
+    },
+  });
   const { error } = await supabase.auth.signInWithPassword({
     email: credentials.email,
     password: credentials.password,
@@ -49,5 +63,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ success: true });
+  return response;
 }
