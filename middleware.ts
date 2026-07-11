@@ -121,6 +121,13 @@ function isAllowedEmail(email: string | undefined) {
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
+
+  if (process.env.NODE_ENV === "development") {
+    [process.env.DEV_DEMO_OWNER_EMAIL, process.env.DEV_DEMO_PARTNER_EMAIL]
+      .filter((value): value is string => Boolean(value))
+      .forEach((value) => allowed.push(value.trim().toLowerCase()));
+  }
+
   return allowed.includes(email.trim().toLowerCase());
 }
 
@@ -185,11 +192,15 @@ export async function middleware(request: NextRequest) {
   };
 
   const isLoginRoute = request.nextUrl.pathname === LOGIN_PATH;
+  const isDevelopmentLoginRoute =
+    process.env.NODE_ENV === "development" &&
+    request.nextUrl.pathname === "/api/auth/development-login";
+  const isPublicRoute = isLoginRoute || isDevelopmentLoginRoute;
   if (user && !isAllowedEmail(user.email)) {
     clearSession(response, request, cookieName);
     return redirect(LOGIN_PATH, { error: "access-denied" });
   }
-  if (!user && !isLoginRoute)
+  if (!user && !isPublicRoute)
     return redirect(LOGIN_PATH, { next: request.nextUrl.pathname });
   if (user && isLoginRoute) return redirect("/");
   return response;

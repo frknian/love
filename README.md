@@ -39,6 +39,19 @@ cp .env.example .env.local
 
 Uygulama, Supabase SSR cookie tabanlı session yönetimini kullanır. Middleware her istekte oturumu yeniler; giriş yapmamış veya izinli listede olmayan kullanıcıları `/login` sayfasına yönlendirir. İzinli e-posta listesi yalnızca sunucu ortam değişkeninden okunur ve tarayıcıya gönderilmez.
 
+### Development Login Mode
+
+Yalnızca `NODE_ENV=development` iken giriş ekranında iki demo hesabı görünür. Aşağıdaki değerleri yalnızca yerel `.env.local` dosyanıza ekleyin; şifreler hiçbir zaman tarayıcıya gönderilmez:
+
+```env
+DEV_DEMO_OWNER_EMAIL=
+DEV_DEMO_OWNER_PASSWORD=
+DEV_DEMO_PARTNER_EMAIL=
+DEV_DEMO_PARTNER_PASSWORD=
+```
+
+Demo hesapları, geliştirme ortamında izinli kullanıcı listesine otomatik eklenir. Production ortamında demo arayüzü ve demo giriş endpoint'i tamamen devre dışıdır; normal Supabase giriş akışı değişmeden kalır.
+
 ## Database, RLS ve Anılar
 
 `supabase/migrations/20260711140000_create_memories_schema.sql` aşağıdaki yapıyı kurar:

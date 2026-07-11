@@ -2,6 +2,7 @@ import { Heart } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
+import { getDevelopmentDemoAccounts } from "@/lib/auth/development-demo";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
 interface LoginPageProps {
@@ -39,7 +40,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="mt-3 text-sm leading-6 text-slate-500">
           Anılarımıza kaldığımız yerden devam etmek için giriş yap.
         </p>
-        <LoginForm initialError={initialError} nextPath={nextPath} />
+        <LoginForm
+          demoAccounts={getDevelopmentDemoAccounts()}
+          initialError={initialError}
+          nextPath={nextPath}
+        />
       </section>
     </main>
   );

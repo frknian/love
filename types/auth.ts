@@ -7,3 +7,8 @@ export interface AppUser {
   role: UserRole;
   avatarUrl?: string;
 }
+
+export interface DevelopmentDemoAccount {
+  role: UserRole;
+  email: string;
+}

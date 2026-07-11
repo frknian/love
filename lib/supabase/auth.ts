@@ -7,10 +7,19 @@ function normalizedEmail(value: string) {
 }
 
 export function getAllowedEmails() {
-  return (process.env.ALLOWED_USER_EMAILS ?? "")
+  const productionEmails = (process.env.ALLOWED_USER_EMAILS ?? "")
     .split(",")
     .map(normalizedEmail)
     .filter(Boolean);
+
+  const developmentDemoEmails =
+    process.env.NODE_ENV === "development"
+      ? [process.env.DEV_DEMO_OWNER_EMAIL, process.env.DEV_DEMO_PARTNER_EMAIL]
+          .filter((email): email is string => Boolean(email))
+          .map(normalizedEmail)
+      : [];
+
+  return [...new Set([...productionEmails, ...developmentDemoEmails])];
 }
 
 export function isAllowedEmail(email: string | undefined) {
@@ -18,8 +27,13 @@ export function isAllowedEmail(email: string | undefined) {
 }
 
 export function getUserRole(email: string): UserRole {
-  return normalizedEmail(email) ===
-    normalizedEmail(process.env.APP_OWNER_EMAIL ?? "")
+  const ownerEmail =
+    process.env.APP_OWNER_EMAIL ??
+    (process.env.NODE_ENV === "development"
+      ? process.env.DEV_DEMO_OWNER_EMAIL
+      : "");
+
+  return normalizedEmail(email) === normalizedEmail(ownerEmail ?? "")
     ? "owner"
     : "partner";
 }

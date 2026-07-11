@@ -5,16 +5,27 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
+import type { DevelopmentDemoAccount, UserRole } from "@/types/auth";
 
 interface LoginFormProps {
+  demoAccounts: DevelopmentDemoAccount[];
   nextPath: string;
   initialError?: string;
 }
 
-export function LoginForm({ nextPath, initialError }: LoginFormProps) {
+export function LoginForm({
+  demoAccounts,
+  nextPath,
+  initialError,
+}: LoginFormProps) {
   const router = useRouter();
   const [error, setError] = useState(initialError);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function finishSignIn() {
+    router.replace(nextPath.startsWith("/") ? nextPath : "/");
+    router.refresh();
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,8 +48,32 @@ export function LoginForm({ nextPath, initialError }: LoginFormProps) {
       return;
     }
 
-    router.replace(nextPath.startsWith("/") ? nextPath : "/");
-    router.refresh();
+    finishSignIn();
+  }
+
+  async function handleDevelopmentLogin(role: UserRole) {
+    setError(undefined);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/auth/development-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setError(result.error ?? "Demo girişi yapılamadı.");
+        return;
+      }
+
+      finishSignIn();
+    } catch {
+      setError("Demo girişi sırasında bir bağlantı sorunu oluştu.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -51,7 +86,7 @@ export function LoginForm({ nextPath, initialError }: LoginFormProps) {
           <Mail aria-hidden="true" className="size-5 text-rose-400" />
           <input
             autoComplete="email"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent text-sm text-slate-700 caret-rose-500 outline-none placeholder:text-slate-400"
             name="email"
             placeholder="ornek@email.com"
             required
@@ -67,7 +102,7 @@ export function LoginForm({ nextPath, initialError }: LoginFormProps) {
           <LockKeyhole aria-hidden="true" className="size-5 text-rose-400" />
           <input
             autoComplete="current-password"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent text-sm text-slate-700 caret-rose-500 outline-none placeholder:text-slate-400"
             name="password"
             placeholder="Şifren"
             required
@@ -88,6 +123,33 @@ export function LoginForm({ nextPath, initialError }: LoginFormProps) {
         {isSubmitting ? <LoaderCircle className="size-5 animate-spin" /> : null}
         {isSubmitting ? "Giriş yapılıyor" : "Giriş Yap"}
       </button>
+      {demoAccounts.length ? (
+        <div className="border-t border-rose-100 pt-4">
+          <p className="mb-3 text-center text-xs font-medium uppercase tracking-[0.16em] text-rose-400">
+            Geliştirme hesapları
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {demoAccounts.map((account) => (
+              <button
+                className="rounded-2xl border border-rose-100 bg-rose-50/70 px-3 py-2.5 text-left transition hover:border-rose-200 hover:bg-rose-100/70 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isSubmitting}
+                key={account.role}
+                onClick={() => handleDevelopmentLogin(account.role)}
+                type="button"
+              >
+                <span className="block text-sm font-semibold text-rose-700">
+                  {account.role === "owner"
+                    ? "Login as Owner"
+                    : "Login as Partner"}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-slate-500">
+                  {account.email}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }
