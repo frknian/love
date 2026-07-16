@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Plus, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { CalendarMonthView } from "@/components/events/calendar-month-view";
 import { CalendarWeekView } from "@/components/events/calendar-week-view";
@@ -51,6 +52,7 @@ export function EventsWorkspace({
   currentUserName,
   partnerName,
 }: EventsWorkspaceProps) {
+  const router = useRouter();
   const { events, realtimeError, upsert, remove } = useEvents({
     initialEvents,
     coupleId,
@@ -94,6 +96,7 @@ export function EventsWorkspace({
       }
       upsert(toCoupleEvent(row, sheetState.createdByName));
       setDetailEvent(null);
+      router.refresh();
       return;
     }
     const row = await eventsService.create(coupleId, currentUserId, input);
@@ -101,6 +104,7 @@ export function EventsWorkspace({
       await eventsService.setRelationshipStartDate(coupleId, input.eventDate);
     }
     upsert(toCoupleEvent(row, currentUserName));
+    router.refresh();
   }
 
   async function handleDelete(event: CoupleEvent) {
