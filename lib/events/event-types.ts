@@ -15,7 +15,7 @@ export const eventTypeCatalog: EventTypeDefinition[] = [
   },
   {
     type: "anniversary",
-    label: "Yıldönümü",
+    label: "Sevgililik Günü",
     icon: "💍",
     badge: "bg-purple-100 text-purple-600",
     dot: "bg-purple-400",
