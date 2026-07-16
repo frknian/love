@@ -31,6 +31,9 @@ export const signupService = {
     const { data, error } = await createClient().auth.signUp({
       email: payload.email,
       password: payload.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
     if (error) {

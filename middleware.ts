@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const LOGIN_PATH = "/login";
 const SIGNUP_PATH = "/kayit";
+const AUTH_CALLBACK_PATH = "/auth/callback";
 const COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
 const COOKIE_CHUNK_SIZE = 3180;
 
@@ -162,11 +163,16 @@ export async function middleware(request: NextRequest) {
 
   const isLoginRoute = request.nextUrl.pathname === LOGIN_PATH;
   const isSignupRoute = request.nextUrl.pathname === SIGNUP_PATH;
+  const isAuthCallbackRoute =
+    request.nextUrl.pathname === AUTH_CALLBACK_PATH;
   const isDevelopmentLoginRoute =
     process.env.NODE_ENV === "development" &&
     request.nextUrl.pathname === "/api/auth/development-login";
   const isPublicRoute =
-    isLoginRoute || isSignupRoute || isDevelopmentLoginRoute;
+    isLoginRoute ||
+    isSignupRoute ||
+    isAuthCallbackRoute ||
+    isDevelopmentLoginRoute;
   if (!user && !isPublicRoute)
     return redirect(LOGIN_PATH, { next: request.nextUrl.pathname });
   if (user && (isLoginRoute || isSignupRoute)) return redirect("/");
