@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
 import { ThemeSwitcher } from "@/components/settings/theme-switcher";
 import { ToggleRow } from "@/components/settings/toggle-row";
+import { InstallAppCard } from "@/components/pwa/install-app-card";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-provider";
 import { useSettings } from "@/hooks/use-settings";
@@ -110,6 +111,16 @@ export function SettingsWorkspace({
         onChange={handleNotificationPreferenceChange}
         preferences={settings.notificationPreferences}
       />
+
+      <Card className="w-full overflow-hidden">
+        <p className="font-semibold text-slate-800 dark:text-slate-100">
+          Uygulamayı yükle
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          Bizim Hikâyemiz’e ana ekrandan tek dokunuşla ulaş.
+        </p>
+        <InstallAppCard />
+      </Card>
 
       <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">
