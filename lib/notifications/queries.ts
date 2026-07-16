@@ -20,14 +20,19 @@ export const getEngagementContext = cache(
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: members, error } = await supabase
+    const { data: me, error: memberError } = await supabase
       .from("profiles")
-      .select("id, couple_id, display_name");
-    if (error || !members?.length) return null;
+      .select("id, couple_id, display_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (memberError || !me) return null;
 
-    const me = members.find((member) => member.id === user.id);
-    if (!me) return null;
-    const partner = members.find((member) => member.id !== user.id) ?? null;
+    const { data: partner } = await supabase
+      .from("profiles")
+      .select("id, couple_id, display_name")
+      .eq("couple_id", me.couple_id)
+      .neq("id", user.id)
+      .maybeSingle();
     const { data: couple } = await supabase
       .from("couples")
       .select("anniversary_date")

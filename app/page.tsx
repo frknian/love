@@ -9,6 +9,7 @@ import { UpcomingEventsCard } from "@/components/home/upcoming-events-card";
 import { WelcomeCard } from "@/components/home/welcome-card";
 import { PageShell } from "@/components/layout/page-shell";
 import { InteractionPicker } from "@/components/notifications/interaction-picker";
+import { InteractionUnavailableCard } from "@/components/notifications/interaction-unavailable-card";
 import { getBucketItems, getBucketLists } from "@/lib/bucket/queries";
 import { withProgress } from "@/lib/bucket/bucket-mapper";
 import { getNextLockedCapsule } from "@/lib/capsule/queries";
@@ -74,6 +75,8 @@ export default async function HomePage() {
             partnerId={context.partnerId}
             partnerName={context.partnerName ?? "Partnerin"}
           />
+        ) : context ? (
+          <InteractionUnavailableCard />
         ) : null}
         <CountdownStrip countdowns={nearestCountdowns} />
         <div className="grid gap-4 sm:grid-cols-2">
