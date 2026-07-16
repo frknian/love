@@ -53,24 +53,31 @@ export async function getMemories(): Promise<Memory[]> {
     .order("created_at", { ascending: false });
   if (error) throw new Error("Anılar yüklenemedi.");
 
-  return Promise.all(
-    (data ?? []).map(async (record) => {
-      const { data: signedUrl } = await supabase.storage
-        .from("memories")
-        .createSignedUrl(record.image_url, 60 * 60);
-      return {
-        id: record.id,
-        albumId: record.album_id,
-        coupleId: record.couple_id,
-        uploadedBy: record.uploaded_by,
-        imagePath: record.image_url,
-        imageUrl: signedUrl?.signedUrl ?? "",
-        title: record.title,
-        description: record.description,
-        location: record.location,
-        memoryDate: record.memory_date,
-        createdAt: record.created_at,
-      };
-    }),
+  const records = data ?? [];
+  const { data: signedUrls } = records.length
+    ? await supabase.storage.from("memories").createSignedUrls(
+        records.map((record) => record.image_url),
+        60 * 60,
+      )
+    : { data: [] };
+  const signedUrlByPath = new Map(
+    (signedUrls ?? []).map((signedUrl) => [
+      signedUrl.path,
+      signedUrl.signedUrl ?? "",
+    ]),
   );
+
+  return records.map((record) => ({
+    id: record.id,
+    albumId: record.album_id,
+    coupleId: record.couple_id,
+    uploadedBy: record.uploaded_by,
+    imagePath: record.image_url,
+    imageUrl: signedUrlByPath.get(record.image_url) ?? "",
+    title: record.title,
+    description: record.description,
+    location: record.location,
+    memoryDate: record.memory_date,
+    createdAt: record.created_at,
+  }));
 }

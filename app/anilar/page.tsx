@@ -12,6 +12,13 @@ export default async function MemoriesPage() {
     getAlbums(),
     getMemories(),
   ]);
+  const albumsWithPreviews = albums.map((album) => {
+    const preview =
+      (album.coverImage
+        ? memories.find((memory) => memory.imagePath === album.coverImage)
+        : undefined) ?? memories.find((memory) => memory.albumId === album.id);
+    return { ...album, coverImageUrl: preview?.imageUrl };
+  });
 
   return (
     <PageShell>
@@ -32,10 +39,25 @@ export default async function MemoriesPage() {
         </div>
         {albums.length ? (
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-            {albums.map((album) => (
-              <Card className="min-w-36 shrink-0 p-4" key={album.id}>
-                <Images className="size-5 text-rose-400" />
-                <p className="mt-3 max-w-28 truncate text-sm font-semibold text-slate-700">
+            {albumsWithPreviews.map((album) => (
+              <Card
+                className="min-w-36 shrink-0 overflow-hidden p-0"
+                key={album.id}
+              >
+                <div className="relative h-24 bg-rose-50">
+                  {album.coverImageUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      alt=""
+                      className="size-full object-cover"
+                      loading="lazy"
+                      src={album.coverImageUrl}
+                    />
+                  ) : (
+                    <Images className="absolute inset-0 m-auto size-7 text-rose-300" />
+                  )}
+                </div>
+                <p className="max-w-28 truncate px-4 py-3 text-sm font-semibold text-slate-700">
                   {album.title}
                 </p>
               </Card>
@@ -51,7 +73,7 @@ export default async function MemoriesPage() {
 
         {context ? (
           <div className="mt-6">
-            <MemoriesManager albums={albums} context={context} />
+            <MemoriesManager albums={albumsWithPreviews} context={context} />
           </div>
         ) : null}
 

@@ -3,6 +3,7 @@ export interface Album {
   coupleId: string;
   title: string;
   coverImage: string | null;
+  coverImageUrl?: string;
   createdAt: string;
 }
 

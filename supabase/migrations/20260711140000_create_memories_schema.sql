@@ -121,12 +121,13 @@ with check (
   and (select public.album_belongs_to_current_couple(album_id))
 );
 
-create policy "Uploaders can update their memories"
+revoke update (uploaded_by) on public.memories from authenticated;
+
+create policy "Couple members can update their memories"
 on public.memories for update to authenticated
-using (uploaded_by = (select auth.uid()))
+using (couple_id = (select public.current_user_couple_id()))
 with check (
   couple_id = (select public.current_user_couple_id())
-  and uploaded_by = (select auth.uid())
   and (select public.album_belongs_to_current_couple(album_id))
 );
 

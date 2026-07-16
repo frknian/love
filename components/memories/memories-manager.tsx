@@ -112,8 +112,9 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       return;
     }
 
+    const albumId = String(formData.get("album-id"));
     const { error: insertError } = await supabase.from("memories").insert({
-      album_id: String(formData.get("album-id")),
+      album_id: albumId,
       couple_id: context.coupleId,
       uploaded_by: context.userId,
       image_url: imagePath,
@@ -128,6 +129,13 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       setIsUploading(false);
       return;
     }
+
+    // İlk fotoğraf albümün kapağı olur; mevcut kapak hiçbir zaman ezilmez.
+    await supabase
+      .from("albums")
+      .update({ cover_image: imagePath })
+      .eq("id", albumId)
+      .is("cover_image", null);
 
     event.currentTarget.reset();
     setFileName("Fotoğraf seçilmedi");
