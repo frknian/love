@@ -36,6 +36,18 @@ cp .env.example .env.local
 
 Uygulama, Supabase SSR cookie tabanlı session yönetimini kullanır. Middleware her istekte oturumu yeniler; giriş yapmamış kullanıcıları `/login` sayfasına yönlendirir. Kimliği doğrulanmış ama henüz bir çifte katılmamış kullanıcılar `/onboarding` sayfasına yönlendirilir.
 
+### Kayıt, profil ve çift eşleşmesi
+
+Yeni kullanıcı `/kayit` üzerinden hesap oluşturduktan sonra `/onboarding` ekranına yönlendirilir. Burada kendi çiftini oluşturup davet kodu üretebilir veya partnerinin kodunu girerek mevcut çifte katılabilir. Bu akış `create_couple_and_profile` ve `join_couple_by_code` RPC fonksiyonlarıyla atomik biçimde çalışır.
+
+Migration'lar uygulandıktan sonra iki demo hesabı ve modülleri örnek verilerle doldurmak için:
+
+```bash
+npm run simulate
+```
+
+Komut `.env.local` içindeki `DEV_DEMO_OWNER_*` ve `DEV_DEMO_PARTNER_*` değerlerini kullanır. Gerçek kullanıcı verilerini silmez; sabit demo kimlikleriyle tekrar çalıştırılabilir.
+
 ### Açık kayıt ve davet kodu ile eşleşme
 
 Önceki kapalı mimaride (`ALLOWED_USER_EMAILS` / `APP_OWNER_EMAIL`) yalnızca dashboard'dan manuel oluşturulan iki hesap giriş yapabiliyordu. Artık uygulama herkese açık:
