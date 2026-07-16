@@ -114,8 +114,8 @@ begin
   end if;
 
   select count(*) into v_member_count
-  from public.profiles
-  where couple_id = v_couple_id;
+  from public.profiles as profile_row
+  where profile_row.couple_id = v_couple_id;
 
   if v_member_count >= 2 then
     raise exception 'Bu çift zaten tamamlanmış.';
