@@ -89,11 +89,17 @@ export function EventsWorkspace({
     setError(undefined);
     if (sheetState && sheetState !== "new") {
       const row = await eventsService.update(sheetState.id, input);
+      if (input.eventType === "anniversary") {
+        await eventsService.setRelationshipStartDate(coupleId, input.eventDate);
+      }
       upsert(toCoupleEvent(row, sheetState.createdByName));
       setDetailEvent(null);
       return;
     }
     const row = await eventsService.create(coupleId, currentUserId, input);
+    if (input.eventType === "anniversary") {
+      await eventsService.setRelationshipStartDate(coupleId, input.eventDate);
+    }
     upsert(toCoupleEvent(row, currentUserName));
   }
 

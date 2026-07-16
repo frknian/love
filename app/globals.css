@@ -76,15 +76,15 @@ body {
 .dark input,
 .dark textarea,
 .dark select {
-  color: hsl(var(--foreground));
-  background-color: hsl(var(--card));
-  border-color: hsl(var(--border));
+  color: #111827;
+  background-color: #ffffff;
+  border-color: #fbcfe8;
   color-scheme: dark;
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: hsl(var(--muted-foreground));
+  color: #64748b;
 }
 
 ::selection {

@@ -37,6 +37,17 @@ const eventColumns =
   "id, couple_id, title, description, event_type, event_date, repeat_yearly, cover_image, created_by, created_at";
 
 export const eventsService = {
+  async setRelationshipStartDate(
+    coupleId: string,
+    anniversaryDate: string,
+  ): Promise<void> {
+    const { error } = await createClient()
+      .from("couples")
+      .update({ anniversary_date: anniversaryDate })
+      .eq("id", coupleId);
+    if (error) throw new Error("Sevgililik tarihi güncellenemedi.");
+  },
+
   async create(
     coupleId: string,
     createdBy: string,
