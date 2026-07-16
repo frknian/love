@@ -4,10 +4,23 @@ import { PageShell } from "@/components/layout/page-shell";
 import { SettingsWorkspace } from "@/components/settings/settings-workspace";
 import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function SettingsPage() {
   const user = await getCurrentAppUser();
   const settings = user ? await getOrCreateUserSettings(user.id) : null;
+  const inviteCode =
+    user?.coupleId && user.role === "owner"
+      ? (
+          await (
+            await createClient()
+          )
+            .from("couples")
+            .select("invite_code")
+            .eq("id", user.coupleId)
+            .maybeSingle()
+        ).data?.invite_code
+      : undefined;
 
   return (
     <PageShell>
@@ -22,7 +35,11 @@ export default async function SettingsPage() {
           Uygulama tercihlerini ve oturumunu yönet.
         </p>
         {user && settings ? (
-          <SettingsWorkspace initialSettings={settings} userId={user.id} />
+          <SettingsWorkspace
+            initialSettings={settings}
+            inviteCode={inviteCode ?? undefined}
+            userId={user.id}
+          />
         ) : null}
       </section>
     </PageShell>

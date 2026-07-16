@@ -25,14 +25,22 @@ export interface SignupResult {
   hasSession: boolean;
 }
 
+interface SignupOptions {
+  redirectTo?: string;
+}
+
 export const signupService = {
-  async signUp(input: SignupInput): Promise<SignupResult> {
+  async signUp(
+    input: SignupInput,
+    options?: SignupOptions,
+  ): Promise<SignupResult> {
     const payload = signupInputSchema.parse(input);
     const { data, error } = await createClient().auth.signUp({
       email: payload.email,
       password: payload.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo:
+          options?.redirectTo ?? `${window.location.origin}/auth/callback`,
       },
     });
 

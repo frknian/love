@@ -5,11 +5,18 @@ import { redirect } from "next/navigation";
 import { SignupForm } from "@/components/auth/signup-form";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
-export default async function SignupPage() {
-  const user = await getCurrentAppUser();
+interface SignupPageProps {
+  searchParams: Promise<{ invite?: string }>;
+}
+
+export default async function SignupPage({ searchParams }: SignupPageProps) {
+  const [user, params] = await Promise.all([getCurrentAppUser(), searchParams]);
+  const onboardingPath = params.invite?.trim()
+    ? `/onboarding?invite=${encodeURIComponent(params.invite.trim())}`
+    : "/onboarding";
 
   if (user) {
-    redirect(user.coupleId ? "/" : "/onboarding");
+    redirect(user.coupleId ? "/" : onboardingPath);
   }
 
   return (
@@ -31,7 +38,10 @@ export default async function SignupPage() {
         <SignupForm />
         <p className="mt-5 text-center text-sm text-slate-500">
           Zaten hesabın var mı?{" "}
-          <Link className="font-semibold text-rose-500" href="/login">
+          <Link
+            className="font-semibold text-rose-500"
+            href={`/login?next=${encodeURIComponent(onboardingPath)}`}
+          >
             Giriş yap
           </Link>
         </p>

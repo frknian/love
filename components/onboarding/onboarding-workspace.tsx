@@ -18,12 +18,18 @@ import { onboardingService } from "@/services/onboarding/onboarding-service";
 import type { OnboardingMode } from "@/types/onboarding";
 
 interface OnboardingWorkspaceProps {
+  initialInviteCode?: string;
   userId: string;
 }
 
-export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
+export function OnboardingWorkspace({
+  initialInviteCode,
+  userId,
+}: OnboardingWorkspaceProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<OnboardingMode>("create");
+  const [mode, setMode] = useState<OnboardingMode>(
+    initialInviteCode ? "join" : "create",
+  );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,21 +82,38 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
     }
   }
 
-  async function handleCopyCode() {
+  function getInviteUrl() {
     if (!createdInvite) return;
-    await navigator.clipboard.writeText(createdInvite);
+    const inviteUrl = new URL("/kayit", window.location.origin);
+    inviteUrl.searchParams.set("invite", createdInvite);
+    return inviteUrl.toString();
+  }
+
+  async function handleCopyInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+    await navigator.clipboard.writeText(inviteUrl);
     setIsCopied(true);
     window.setTimeout(() => setIsCopied(false), 2000);
   }
 
   async function handleShareCode() {
-    if (!createdInvite) return;
-    const shareText = `Bizim Hikâyemiz'e katılmak için davet kodum: ${createdInvite}`;
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    const shareText =
+      "Bizim Hikâyemiz'e katılman için sana bir davet gönderdim.";
     if (navigator.share) {
-      await navigator.share({ text: shareText }).catch(() => undefined);
+      await navigator
+        .share({
+          title: "Bizim Hikâyemiz daveti",
+          text: shareText,
+          url: inviteUrl,
+        })
+        .catch(() => undefined);
       return;
     }
-    await handleCopyCode();
+    await handleCopyInvite();
   }
 
   if (createdInvite) {
@@ -105,8 +128,8 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
           Çiftiniz oluşturuldu!
         </p>
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          Bu kodu partnerine gönder, kayıt olurken &ldquo;Davet koduyla
-          katıl&rdquo; seçeneğinden girsin.
+          Partnerine davet bağlantısını gönder; kayıt olduktan sonra çifte
+          katılım ekranı onun için hazır olacak.
         </p>
         <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-2xl font-bold tracking-[0.3em] text-rose-600">
           {createdInvite}
@@ -114,7 +137,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
         <div className="mt-4 flex gap-2">
           <button
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm"
-            onClick={handleCopyCode}
+            onClick={handleCopyInvite}
             type="button"
           >
             {isCopied ? (
@@ -122,7 +145,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
             ) : (
               <Copy className="size-4" />
             )}
-            {isCopied ? "Kopyalandı" : "Kopyala"}
+            {isCopied ? "Kopyalandı" : "Bağlantıyı kopyala"}
           </button>
           <button
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm"
@@ -242,6 +265,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
               className="w-full rounded-2xl border border-rose-100 bg-white/80 px-4 py-3 text-sm uppercase tracking-widest text-slate-700 outline-none focus:border-rose-300"
               maxLength={16}
               name="inviteCode"
+              defaultValue={initialInviteCode}
               placeholder="ör. AB12CD34"
               required={mode === "join"}
             />

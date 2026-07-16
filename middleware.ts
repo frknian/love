@@ -163,8 +163,7 @@ export async function middleware(request: NextRequest) {
 
   const isLoginRoute = request.nextUrl.pathname === LOGIN_PATH;
   const isSignupRoute = request.nextUrl.pathname === SIGNUP_PATH;
-  const isAuthCallbackRoute =
-    request.nextUrl.pathname === AUTH_CALLBACK_PATH;
+  const isAuthCallbackRoute = request.nextUrl.pathname === AUTH_CALLBACK_PATH;
   const isDevelopmentLoginRoute =
     process.env.NODE_ENV === "development" &&
     request.nextUrl.pathname === "/api/auth/development-login";
@@ -175,7 +174,11 @@ export async function middleware(request: NextRequest) {
     isDevelopmentLoginRoute;
   if (!user && !isPublicRoute)
     return redirect(LOGIN_PATH, { next: request.nextUrl.pathname });
-  if (user && (isLoginRoute || isSignupRoute)) return redirect("/");
+  if (user && isSignupRoute) {
+    const invite = request.nextUrl.searchParams.get("invite");
+    return redirect("/onboarding", invite ? { invite } : undefined);
+  }
+  if (user && isLoginRoute) return redirect("/");
   return response;
 }
 

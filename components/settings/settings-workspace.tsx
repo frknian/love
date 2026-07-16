@@ -1,5 +1,8 @@
 "use client";
 
+import { Check, Copy, Share2 } from "lucide-react";
+import { useState } from "react";
+
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
@@ -13,11 +16,13 @@ import type { NotificationPreferenceKey, UserSettings } from "@/types/settings";
 
 interface SettingsWorkspaceProps {
   initialSettings: UserSettings;
+  inviteCode?: string;
   userId: string;
 }
 
 export function SettingsWorkspace({
   initialSettings,
+  inviteCode,
   userId,
 }: SettingsWorkspaceProps) {
   const { settings, update, isSaving } = useSettings({
@@ -25,6 +30,42 @@ export function SettingsWorkspace({
     userId,
   });
   const { showToast } = useToast();
+  const [isInviteCopied, setIsInviteCopied] = useState(false);
+
+  function getInviteUrl() {
+    if (!inviteCode) return;
+    const inviteUrl = new URL("/kayit", window.location.origin);
+    inviteUrl.searchParams.set("invite", inviteCode);
+    return inviteUrl.toString();
+  }
+
+  async function handleCopyInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    await navigator.clipboard.writeText(inviteUrl);
+    setIsInviteCopied(true);
+    showToast("Davet bağlantısı kopyalandı.");
+    window.setTimeout(() => setIsInviteCopied(false), 2000);
+  }
+
+  async function handleShareInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    if (navigator.share) {
+      await navigator
+        .share({
+          title: "Bizim Hikâyemiz daveti",
+          text: "Bizim Hikâyemiz'e katılman için sana bir davet gönderdim.",
+          url: inviteUrl,
+        })
+        .catch(() => undefined);
+      return;
+    }
+
+    await handleCopyInvite();
+  }
 
   async function handleUpdate(
     label: string,
@@ -111,6 +152,43 @@ export function SettingsWorkspace({
         onChange={handleNotificationPreferenceChange}
         preferences={settings.notificationPreferences}
       />
+
+      {inviteCode ? (
+        <Card className="w-full overflow-hidden">
+          <p className="font-semibold text-slate-800 dark:text-slate-100">
+            Partnerini davet et
+          </p>
+          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Davet bağlantısını partnerine gönder; kayıt olduktan sonra çifte
+            doğrudan katılabilir.
+          </p>
+          <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-center text-sm font-bold tracking-[0.2em] text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
+            {inviteCode}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600"
+              onClick={handleCopyInvite}
+              type="button"
+            >
+              {isInviteCopied ? (
+                <Check className="size-4" />
+              ) : (
+                <Copy className="size-4" />
+              )}
+              {isInviteCopied ? "Kopyalandı" : "Bağlantıyı kopyala"}
+            </button>
+            <button
+              aria-label="Davet bağlantısını paylaş"
+              className="grid size-10 place-items-center rounded-xl bg-rose-100 text-rose-600 transition hover:bg-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30"
+              onClick={handleShareInvite}
+              type="button"
+            >
+              <Share2 className="size-4" />
+            </button>
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">
