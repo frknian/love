@@ -96,15 +96,23 @@ export function SettingsWorkspace({
   }
 
   return (
-    <div className="mt-8 space-y-4">
+    <div aria-busy={isSaving} className="mt-8 space-y-4">
       <Card className="w-full overflow-hidden">
-        <p className="font-semibold text-slate-800 dark:text-slate-100">Tema</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-semibold text-slate-800 dark:text-slate-100">
+            Tema
+          </p>
+          {isSaving ? (
+            <span className="text-xs font-medium text-slate-400" role="status">
+              Kaydediliyor…
+            </span>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Açık, koyu veya sistem temasını takip et.
         </p>
         <div className="mt-3">
           <ThemeSwitcher
-            disabled={isSaving}
             onChange={(theme) => void handleUpdate("Tema", { theme })}
             value={settings.theme}
           />
@@ -118,7 +126,6 @@ export function SettingsWorkspace({
         <div className="mt-2 divide-y divide-rose-100/70 dark:divide-white/5">
           <ToggleRow
             checked={settings.notificationsEnabled}
-            disabled={isSaving}
             label="Bildirimler"
             onChange={(value) =>
               void handleUpdate("Bildirimler", { notificationsEnabled: value })
@@ -126,7 +133,6 @@ export function SettingsWorkspace({
           />
           <ToggleRow
             checked={settings.animationEnabled}
-            disabled={isSaving}
             label="Animasyonlar"
             onChange={(value) =>
               void handleUpdate("Animasyonlar", { animationEnabled: value })
@@ -134,7 +140,6 @@ export function SettingsWorkspace({
           />
           <ToggleRow
             checked={settings.hapticsEnabled}
-            disabled={isSaving}
             label="Titreşim"
             onChange={(value) =>
               void handleUpdate("Titreşim", { hapticsEnabled: value })
@@ -147,7 +152,6 @@ export function SettingsWorkspace({
         <p className="font-semibold text-slate-800 dark:text-slate-100">Dil</p>
         <div className="mt-3">
           <LanguageSwitcher
-            disabled={isSaving}
             onChange={(language) => void handleUpdate("Dil", { language })}
             value={settings.language}
           />
@@ -155,7 +159,7 @@ export function SettingsWorkspace({
       </Card>
 
       <NotificationPreferencesCard
-        disabled={isSaving || !settings.notificationsEnabled}
+        disabled={!settings.notificationsEnabled}
         onChange={handleNotificationPreferenceChange}
         preferences={settings.notificationPreferences}
       />
@@ -174,7 +178,7 @@ export function SettingsWorkspace({
           </p>
           <div className="mt-3 flex gap-2">
             <button
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.98]"
               onClick={handleCopyInvite}
               type="button"
             >
@@ -187,7 +191,7 @@ export function SettingsWorkspace({
             </button>
             <button
               aria-label="Davet bağlantısını paylaş"
-              className="grid size-10 place-items-center rounded-xl bg-rose-100 text-rose-600 transition hover:bg-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30"
+              className="grid size-11 place-items-center rounded-xl bg-rose-100 text-rose-600 transition hover:bg-rose-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.98] dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30"
               onClick={handleShareInvite}
               type="button"
             >

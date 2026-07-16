@@ -22,7 +22,7 @@ export function LogoutButton() {
 
   return (
     <button
-      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-70"
+      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
       disabled={isLoading}
       onClick={handleLogout}
       type="button"

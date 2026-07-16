@@ -37,12 +37,19 @@ export function GlobalSearchDialog({ onClose }: GlobalSearchDialogProps) {
       return;
     }
     setIsLoading(true);
+    let cancelled = false;
     const timer = window.setTimeout(async () => {
-      const results = await runGlobalSearch(trimmed);
-      setGroups(results);
-      setIsLoading(false);
+      try {
+        const results = await runGlobalSearch(trimmed);
+        if (!cancelled) setGroups(results);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     }, DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [query]);
 
   const hasResults = groups.some((group) => group.items.length > 0);

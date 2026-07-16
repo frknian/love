@@ -26,7 +26,7 @@ export function LanguageSwitcher({
         return (
           <button
             aria-checked={isActive}
-            className={`flex-1 rounded-2xl px-3 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${
+            className={`min-h-11 flex-1 rounded-2xl px-3 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
               isActive
                 ? "bg-rose-500 text-white"
                 : "bg-slate-50 text-slate-500 hover:bg-rose-50 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10"
