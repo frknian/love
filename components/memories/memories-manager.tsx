@@ -7,8 +7,38 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Album, MemoriesContext } from "@/types/memories";
 
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const ACCEPTED_IMAGE_EXTENSIONS = new Set([
+  "avif",
+  "bmp",
+  "gif",
+  "heic",
+  "heif",
+  "ico",
+  "jpeg",
+  "jpg",
+  "png",
+  "svg",
+  "tif",
+  "tiff",
+  "webp",
+]);
+
+function isSupportedImage(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return (
+    file.type.startsWith("image/") ||
+    Boolean(extension && ACCEPTED_IMAGE_EXTENSIONS.has(extension))
+  );
+}
+
+function getUploadContentType(file: File) {
+  if (file.type.startsWith("image/")) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return extension
+    ? `image/${extension === "jpg" ? "jpeg" : extension}`
+    : "application/octet-stream";
+}
 
 interface MemoriesManagerProps {
   albums: Album[];
@@ -59,12 +89,9 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       setError("Önce bir fotoğraf seçmelisin.");
       return;
     }
-    if (
-      !ACCEPTED_IMAGE_TYPES.includes(file.type) ||
-      file.size > MAX_FILE_SIZE_BYTES
-    ) {
+    if (!isSupportedImage(file) || file.size > MAX_FILE_SIZE_BYTES) {
       setError(
-        "JPEG, PNG veya WebP formatında ve en fazla 10 MB bir fotoğraf seç.",
+        "Desteklenen bir fotoğraf formatında ve en fazla 50 MB bir dosya seç.",
       );
       return;
     }
@@ -75,7 +102,10 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     const imagePath = createObjectPath(context, file);
     const { error: uploadError } = await supabase.storage
       .from("memories")
-      .upload(imagePath, file, { contentType: file.type, upsert: false });
+      .upload(imagePath, file, {
+        contentType: getUploadContentType(file),
+        upsert: false,
+      });
     if (uploadError) {
       setError("Fotoğraf yüklenemedi. Bağlantını kontrol edip tekrar dene.");
       setIsUploading(false);
@@ -146,7 +176,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
         </div>
         <div className="mt-4 space-y-3">
           <input
-            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+            accept="image/*,.heic,.heif"
             className="sr-only"
             id="memory-image"
             name="image"
