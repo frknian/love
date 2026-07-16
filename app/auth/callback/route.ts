@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next");
-  const destination = next?.startsWith("/") ? next : "/onboarding";
+  const destination = getSafeDestination(next, requestUrl.origin);
 
   if (code) {
     const supabase = await createClient();
@@ -17,5 +17,19 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL("/login?error=confirmation", requestUrl.origin));
+  return NextResponse.redirect(
+    new URL("/login?error=confirmation", requestUrl.origin),
+  );
+}
+
+function getSafeDestination(next: string | null, origin: string) {
+  if (!next?.startsWith("/") || next.startsWith("//")) return "/onboarding";
+
+  try {
+    const destination = new URL(next, origin);
+    if (destination.origin !== origin) return "/onboarding";
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return "/onboarding";
+  }
 }

@@ -10,6 +10,8 @@ alter table public.profiles
   add column if not exists role text not null default 'partner'
   check (role in ('owner', 'partner'));
 
+revoke update (role) on public.profiles from authenticated;
+
 -- Mevcut satırlar için: her çiftte en erken oluşturulan profil 'owner' kabul edilir.
 with ranked as (
   select id, row_number() over (partition by couple_id order by created_at asc) as rn
@@ -106,8 +108,9 @@ begin
   end if;
 
   select id into v_couple_id
-  from public.couples
-  where invite_code = upper(trim(p_code));
+  from public.couples as couple_row
+  where couple_row.invite_code = upper(trim(p_code))
+  for update;
 
   if v_couple_id is null then
     raise exception 'Geçersiz davet kodu.';

@@ -43,10 +43,17 @@ export function SettingsWorkspace({
     const inviteUrl = getInviteUrl();
     if (!inviteUrl) return;
 
-    await navigator.clipboard.writeText(inviteUrl);
-    setIsInviteCopied(true);
-    showToast("Davet bağlantısı kopyalandı.");
-    window.setTimeout(() => setIsInviteCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setIsInviteCopied(true);
+      showToast("Davet bağlantısı kopyalandı.");
+      window.setTimeout(() => setIsInviteCopied(false), 2000);
+    } catch {
+      showToast(
+        "Bağlantı kopyalanamadı. Paylaş butonunu deneyebilirsin.",
+        "error",
+      );
+    }
   }
 
   async function handleShareInvite() {

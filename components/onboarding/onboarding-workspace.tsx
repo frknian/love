@@ -92,9 +92,13 @@ export function OnboardingWorkspace({
   async function handleCopyInvite() {
     const inviteUrl = getInviteUrl();
     if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    setIsCopied(true);
-    window.setTimeout(() => setIsCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setError("Bağlantı kopyalanamadı. Paylaş butonunu deneyebilirsin.");
+    }
   }
 
   async function handleShareCode() {
