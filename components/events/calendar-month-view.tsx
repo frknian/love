@@ -32,7 +32,7 @@ export function CalendarMonthView({
       <div className="grid grid-cols-7 text-center" role="row">
         {weekdayLabelsTr.map((label) => (
           <span
-            className="py-2 text-[11px] font-semibold text-slate-400"
+            className="py-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
             key={label}
             role="columnheader"
           >
@@ -53,10 +53,10 @@ export function CalendarMonthView({
                   isSelected
                     ? "bg-rose-500 font-semibold text-white"
                     : day.isToday
-                      ? "bg-rose-100 font-semibold text-rose-600"
+                      ? "bg-rose-100 font-semibold text-rose-600 dark:bg-rose-500/20 dark:text-rose-300"
                       : day.inCurrentMonth
-                        ? "text-slate-700 hover:bg-rose-50"
-                        : "text-slate-300 hover:bg-slate-50"
+                        ? "text-slate-700 hover:bg-rose-50 dark:text-slate-200 dark:hover:bg-white/10"
+                        : "text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-white/5"
                 }`}
                 key={day.isoDate}
                 onClick={() => onSelectDay(day.isoDate)}

@@ -48,7 +48,7 @@ export function SettingsWorkspace({
 
   return (
     <div className="mt-8 space-y-4">
-      <Card>
+      <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">Tema</p>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Açık, koyu veya sistem temasını takip et.
@@ -62,7 +62,7 @@ export function SettingsWorkspace({
         </div>
       </Card>
 
-      <Card>
+      <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">
           Genel tercihler
         </p>
@@ -94,7 +94,7 @@ export function SettingsWorkspace({
         </div>
       </Card>
 
-      <Card>
+      <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">Dil</p>
         <div className="mt-3">
           <LanguageSwitcher
@@ -111,7 +111,7 @@ export function SettingsWorkspace({
         preferences={settings.notificationPreferences}
       />
 
-      <Card>
+      <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">
           Oturum
         </p>

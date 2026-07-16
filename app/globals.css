@@ -73,6 +73,20 @@ body {
     hsl(var(--background));
 }
 
+.dark input,
+.dark textarea,
+.dark select {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color-scheme: dark;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
 ::selection {
   background: rgba(251, 113, 133, 0.2);
 }

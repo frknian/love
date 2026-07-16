@@ -17,6 +17,7 @@ import { toUpcomingOccurrences } from "@/lib/events/calendar";
 import { getEvents } from "@/lib/events/queries";
 import { getLatestJournalEntry } from "@/lib/journal/queries";
 import { homeSnapshot } from "@/lib/mock-data";
+import { differenceInDays, fromIsoDate } from "@/lib/date-utils";
 import {
   getEngagementContext,
   getLatestNotification,
@@ -52,6 +53,15 @@ export default async function HomePage() {
   const activeBucketList = bucketLists.length
     ? withProgress(bucketLists[0], bucketItems)
     : null;
+  const daysTogether = context?.relationshipStartDate
+    ? Math.max(
+        0,
+        differenceInDays(
+          new Date(),
+          fromIsoDate(context.relationshipStartDate),
+        ),
+      )
+    : homeSnapshot.daysTogether;
 
   return (
     <PageShell>
@@ -78,7 +88,7 @@ export default async function HomePage() {
           <BucketProgressCard list={activeBucketList} />
           <UpcomingCapsuleCard capsule={nextCapsule} />
           <LatestCountdownCard countdown={latestCountdown} />
-          <StatCard days={homeSnapshot.daysTogether} />
+          <StatCard days={daysTogether} />
         </div>
       </div>
     </PageShell>

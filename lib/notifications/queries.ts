@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { toAppNotification } from "@/lib/notifications/notification-mapper";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -10,30 +12,38 @@ import type {
  * Oturumdaki kullanıcıyı, çiftini ve partner profilini tek seferde çözer.
  * Bildirim gönderimi için partner kimliği zorunludur.
  */
-export async function getEngagementContext(): Promise<EngagementContext | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+export const getEngagementContext = cache(
+  async function getEngagementContext(): Promise<EngagementContext | null> {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const { data: members, error } = await supabase
-    .from("profiles")
-    .select("id, couple_id, display_name");
-  if (error || !members?.length) return null;
+    const { data: members, error } = await supabase
+      .from("profiles")
+      .select("id, couple_id, display_name");
+    if (error || !members?.length) return null;
 
-  const me = members.find((member) => member.id === user.id);
-  if (!me) return null;
-  const partner = members.find((member) => member.id !== user.id) ?? null;
+    const me = members.find((member) => member.id === user.id);
+    if (!me) return null;
+    const partner = members.find((member) => member.id !== user.id) ?? null;
+    const { data: couple } = await supabase
+      .from("couples")
+      .select("anniversary_date")
+      .eq("id", me.couple_id)
+      .maybeSingle<{ anniversary_date: string | null }>();
 
-  return {
-    userId: user.id,
-    coupleId: me.couple_id,
-    displayName: me.display_name,
-    partnerId: partner?.id ?? null,
-    partnerName: partner?.display_name ?? null,
-  };
-}
+    return {
+      userId: user.id,
+      coupleId: me.couple_id,
+      displayName: me.display_name,
+      partnerId: partner?.id ?? null,
+      partnerName: partner?.display_name ?? null,
+      relationshipStartDate: couple?.anniversary_date ?? null,
+    };
+  },
+);
 
 interface NotificationQueryRow extends NotificationRow {
   sender: { display_name: string } | null;

@@ -72,21 +72,21 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
           animate={{ y: 0 }}
           aria-label={event ? "Etkinliği düzenle" : "Yeni etkinlik"}
           aria-modal="true"
-          className="absolute inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-2xl overflow-y-auto rounded-t-[2rem] bg-[#fffafd] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl"
+          className="absolute inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-2xl overflow-y-auto rounded-t-[2rem] bg-[#fffafd] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900"
           exit={{ y: "100%" }}
           initial={{ y: "100%" }}
           onClick={(clickEvent) => clickEvent.stopPropagation()}
           role="dialog"
           transition={{ type: "spring", damping: 28, stiffness: 290 }}
         >
-          <div className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-slate-200" />
+          <div className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
               {event ? "Etkinliği düzenle" : "Yeni etkinlik"}
             </h2>
             <button
               aria-label="Kapat"
-              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500"
+              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500 dark:bg-rose-500/15 dark:text-rose-300"
               onClick={onClose}
               type="button"
             >
@@ -95,7 +95,7 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
           </div>
           <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
             <input
-              className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300"
+              className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300 dark:border-white/10 dark:bg-white/[0.06]"
               defaultValue={event?.title}
               maxLength={120}
               name="title"
@@ -103,7 +103,7 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
               required
             />
             <textarea
-              className="min-h-24 w-full resize-none rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-rose-300"
+              className="min-h-24 w-full resize-none rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-rose-300 dark:border-white/10 dark:bg-white/[0.06]"
               defaultValue={event?.description ?? ""}
               maxLength={1000}
               name="description"
@@ -114,7 +114,7 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
                 Tarih
               </span>
               <input
-                className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300"
+                className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300 dark:border-white/10 dark:bg-white/[0.06]"
                 defaultValue={event?.eventDate}
                 name="eventDate"
                 required
@@ -145,7 +145,7 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
               </div>
             </fieldset>
             <input
-              className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300"
+              className="w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-sm outline-none focus:border-rose-300 dark:border-white/10 dark:bg-white/[0.06]"
               defaultValue={event?.coverImage ?? ""}
               inputMode="url"
               name="coverImage"
@@ -157,7 +157,7 @@ export function EventSheet({ event, onClose, onSubmit }: EventSheetProps) {
               className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition ${
                 repeatYearly
                   ? "bg-rose-100 text-rose-600"
-                  : "bg-slate-100 text-slate-500"
+                  : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"
               }`}
               onClick={() => setRepeatYearly((current) => !current)}
               type="button"

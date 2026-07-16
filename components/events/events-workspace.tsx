@@ -125,7 +125,7 @@ export function EventsWorkspace({
             className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
               view === item.value
                 ? "bg-rose-500 text-white"
-                : "bg-white/70 text-slate-500 hover:bg-rose-50"
+                : "bg-white/70 text-slate-500 hover:bg-rose-50 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10"
             }`}
             key={item.value}
             onClick={() => setView(item.value)}
@@ -155,18 +155,18 @@ export function EventsWorkspace({
           <div className="mb-3 flex items-center justify-between">
             <button
               aria-label={view === "week" ? "Önceki hafta" : "Önceki ay"}
-              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500 transition hover:bg-rose-100"
+              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500 transition hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25"
               onClick={() => shiftCursor(-1)}
               type="button"
             >
               <ChevronLeft className="size-5" />
             </button>
-            <p className="text-sm font-semibold capitalize text-slate-700">
+            <p className="text-sm font-semibold capitalize text-slate-700 dark:text-slate-200">
               {monthFormatter.format(cursor)}
             </p>
             <button
               aria-label={view === "week" ? "Sonraki hafta" : "Sonraki ay"}
-              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500 transition hover:bg-rose-100"
+              className="grid size-9 place-items-center rounded-full bg-rose-50 text-rose-500 transition hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25"
               onClick={() => shiftCursor(1)}
               type="button"
             >
@@ -204,14 +204,14 @@ export function EventsWorkspace({
                 return (
                   <li key={event.id}>
                     <button
-                      className="flex w-full items-center gap-3 rounded-2xl border border-white/70 bg-white/65 px-4 py-3 text-left shadow-sm backdrop-blur-xl transition hover:bg-white/90"
+                      className="flex w-full items-center gap-3 rounded-2xl border border-white/70 bg-white/65 px-4 py-3 text-left shadow-sm backdrop-blur-xl transition hover:bg-white/90 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
                       onClick={() => setDetailEvent(event)}
                       type="button"
                     >
                       <span aria-hidden="true" className="text-lg">
                         {definition.icon}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                         {event.title}
                       </span>
                       <span
@@ -225,7 +225,7 @@ export function EventsWorkspace({
               })}
             </ul>
           ) : (
-            <p className="mt-2 rounded-2xl bg-white/50 px-4 py-3 text-sm text-slate-400">
+            <p className="mt-2 rounded-2xl bg-white/50 px-4 py-3 text-sm text-slate-400 dark:bg-white/[0.04] dark:text-slate-500">
               Bu günde etkinlik yok.
             </p>
           )}

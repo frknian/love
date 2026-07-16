@@ -88,4 +88,5 @@ export interface EngagementContext {
   displayName: string;
   partnerId: string | null;
   partnerName: string | null;
+  relationshipStartDate: string | null;
 }
