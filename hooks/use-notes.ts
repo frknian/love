@@ -99,7 +99,12 @@ export function useNotes({
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "notes" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notes",
+          filter: `couple_id=eq.${coupleId}`,
+        },
         handleChange,
       )
       .subscribe((status) => {

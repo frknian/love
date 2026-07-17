@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/client";
 import type { CreateCoupleResult, JoinCoupleResult } from "@/types/onboarding";
+import { genderOptions, type Gender } from "@/types/profile";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024;
@@ -19,6 +20,8 @@ const inviteCodeSchema = z
   .trim()
   .min(1, "Davet kodunu gir.")
   .max(16, "Geçersiz davet kodu.");
+
+const genderSchema = z.enum(genderOptions);
 
 function validateAvatar(file: File | null) {
   if (!file) return;
@@ -53,15 +56,18 @@ export const onboardingService = {
   async createCouple(
     userId: string,
     displayName: string,
+    gender: Gender,
     avatarFile: File | null,
   ): Promise<CreateCoupleResult> {
     const name = displayNameSchema.parse(displayName);
+    const parsedGender = genderSchema.parse(gender);
     const avatarUrl = await uploadAvatar(userId, avatarFile);
 
     const { data, error } = await createClient()
       .rpc("create_couple_and_profile", {
         p_display_name: name,
         p_avatar_url: avatarUrl,
+        p_gender: parsedGender,
       })
       .single();
 
@@ -79,10 +85,12 @@ export const onboardingService = {
     userId: string,
     inviteCode: string,
     displayName: string,
+    gender: Gender,
     avatarFile: File | null,
   ): Promise<JoinCoupleResult> {
     const name = displayNameSchema.parse(displayName);
     const code = inviteCodeSchema.parse(inviteCode);
+    const parsedGender = genderSchema.parse(gender);
     const avatarUrl = await uploadAvatar(userId, avatarFile);
 
     const { data, error } = await createClient()
@@ -90,6 +98,7 @@ export const onboardingService = {
         p_code: code,
         p_display_name: name,
         p_avatar_url: avatarUrl,
+        p_gender: parsedGender,
       })
       .single();
 

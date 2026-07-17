@@ -37,12 +37,19 @@ export function GlobalSearchDialog({ onClose }: GlobalSearchDialogProps) {
       return;
     }
     setIsLoading(true);
+    let cancelled = false;
     const timer = window.setTimeout(async () => {
-      const results = await runGlobalSearch(trimmed);
-      setGroups(results);
-      setIsLoading(false);
+      try {
+        const results = await runGlobalSearch(trimmed);
+        if (!cancelled) setGroups(results);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     }, DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [query]);
 
   const hasResults = groups.some((group) => group.items.length > 0);
@@ -73,7 +80,7 @@ export function GlobalSearchDialog({ onClose }: GlobalSearchDialogProps) {
               className="size-4 shrink-0 text-slate-400"
             />
             <input
-              aria-label="Anılar, notlar, günlük, bucket list ve etkinliklerde ara"
+              aria-label="Anılar, notlar, günlük, yapmak istediklerimiz ve etkinliklerde ara"
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:text-slate-100"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Anılar, notlar, günlük, etkinlikler..."

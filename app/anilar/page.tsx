@@ -1,17 +1,32 @@
-import { Heart, Images } from "lucide-react";
+import { Heart } from "lucide-react";
 
 import { MemoriesManager } from "@/components/memories/memories-manager";
 import { MemoryCard } from "@/components/memories/memory-card";
+import { MemoryHighlights } from "@/components/memories/memory-highlights";
 import { PageShell } from "@/components/layout/page-shell";
+import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
 import { Card } from "@/components/ui/card";
-import { getAlbums, getMemories, getMemoriesContext } from "@/lib/memories";
+import {
+  getAlbums,
+  getMemories,
+  getMemoriesContext,
+  getMemoryHighlights,
+} from "@/lib/memories";
 
 export default async function MemoriesPage() {
-  const [context, albums, memories] = await Promise.all([
+  const [context, albums, memories, highlightData] = await Promise.all([
     getMemoriesContext(),
     getAlbums(),
     getMemories(),
+    getMemoryHighlights(),
   ]);
+  const albumsWithPreviews = albums.map((album) => {
+    const preview =
+      (album.coverImage
+        ? memories.find((memory) => memory.imagePath === album.coverImage)
+        : undefined) ?? memories.find((memory) => memory.albumId === album.id);
+    return { ...album, coverImageUrl: preview?.imageUrl ?? undefined };
+  });
 
   return (
     <PageShell>
@@ -26,32 +41,30 @@ export default async function MemoriesPage() {
           Birlikte biriktirdiğiniz güzel anları güvenle saklayın.
         </p>
 
-        <div className="mt-7 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">Albümler</h2>
-          <span className="text-xs text-slate-400">{albums.length} albüm</span>
-        </div>
-        {albums.length ? (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-            {albums.map((album) => (
-              <Card className="min-w-36 shrink-0 p-4" key={album.id}>
-                <Images className="size-5 text-rose-400" />
-                <p className="mt-3 max-w-28 truncate text-sm font-semibold text-slate-700">
-                  {album.title}
-                </p>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="mt-3 py-6 text-center">
-            <p className="text-sm text-slate-500">
-              İlk anınızı eklemek için bir albüm oluşturun.
-            </p>
-          </Card>
-        )}
+        {context ? (
+          <MemoryHighlights
+            context={context}
+            highlights={highlightData.highlights}
+            items={highlightData.items}
+            memories={memories}
+          />
+        ) : null}
 
         {context ? (
           <div className="mt-6">
-            <MemoriesManager albums={albums} context={context} />
+            <RealtimePageRefresh
+              channelName={"memories:" + context.coupleId}
+              subscriptions={[
+                "albums",
+                "memories",
+                "memory_highlights",
+                "memory_highlight_items",
+              ].map((table) => ({
+                table,
+                filter: "couple_id=eq." + context.coupleId,
+              }))}
+            />
+            <MemoriesManager albums={albumsWithPreviews} context={context} />
           </div>
         ) : null}
 

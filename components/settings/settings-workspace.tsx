@@ -1,8 +1,14 @@
 "use client";
 
+import { Check, Copy, Share2 } from "lucide-react";
+import { useState } from "react";
+
 import { LogoutButton } from "@/components/auth/logout-button";
+import { GenderSettingsCard } from "@/components/settings/gender-settings-card";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
+import { NotificationPermissionSettingsCard } from "@/components/notifications/notification-permission-settings-card";
+import { LocationSettingsCard } from "@/components/location/location-settings-card";
 import { ThemeSwitcher } from "@/components/settings/theme-switcher";
 import { ToggleRow } from "@/components/settings/toggle-row";
 import { InstallAppCard } from "@/components/pwa/install-app-card";
@@ -10,14 +16,23 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-provider";
 import { useSettings } from "@/hooks/use-settings";
 import type { NotificationPreferenceKey, UserSettings } from "@/types/settings";
+import type { Gender } from "@/types/profile";
 
 interface SettingsWorkspaceProps {
+  initialGender: Gender;
   initialSettings: UserSettings;
+  inviteCode?: string;
+  coupleId: string;
+  partnerId: string | null;
   userId: string;
 }
 
 export function SettingsWorkspace({
+  initialGender,
   initialSettings,
+  inviteCode,
+  coupleId,
+  partnerId,
   userId,
 }: SettingsWorkspaceProps) {
   const { settings, update, isSaving } = useSettings({
@@ -25,6 +40,49 @@ export function SettingsWorkspace({
     userId,
   });
   const { showToast } = useToast();
+  const [isInviteCopied, setIsInviteCopied] = useState(false);
+
+  function getInviteUrl() {
+    if (!inviteCode) return;
+    const inviteUrl = new URL("/kayit", window.location.origin);
+    inviteUrl.searchParams.set("invite", inviteCode);
+    return inviteUrl.toString();
+  }
+
+  async function handleCopyInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setIsInviteCopied(true);
+      showToast("Davet bağlantısı kopyalandı.");
+      window.setTimeout(() => setIsInviteCopied(false), 2000);
+    } catch {
+      showToast(
+        "Bağlantı kopyalanamadı. Paylaş butonunu deneyebilirsin.",
+        "error",
+      );
+    }
+  }
+
+  async function handleShareInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    if (navigator.share) {
+      await navigator
+        .share({
+          title: "Bizim Hikâyemiz daveti",
+          text: "Bizim Hikâyemiz'e katılman için sana bir davet gönderdim.",
+          url: inviteUrl,
+        })
+        .catch(() => undefined);
+      return;
+    }
+
+    await handleCopyInvite();
+  }
 
   async function handleUpdate(
     label: string,
@@ -48,20 +106,30 @@ export function SettingsWorkspace({
   }
 
   return (
-    <div className="mt-8 space-y-4">
+    <div aria-busy={isSaving} className="mt-8 space-y-4">
       <Card className="w-full overflow-hidden">
-        <p className="font-semibold text-slate-800 dark:text-slate-100">Tema</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-semibold text-slate-800 dark:text-slate-100">
+            Tema
+          </p>
+          {isSaving ? (
+            <span className="text-xs font-medium text-slate-400" role="status">
+              Kaydediliyor…
+            </span>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Açık, koyu veya sistem temasını takip et.
         </p>
         <div className="mt-3">
           <ThemeSwitcher
-            disabled={isSaving}
             onChange={(theme) => void handleUpdate("Tema", { theme })}
             value={settings.theme}
           />
         </div>
       </Card>
+
+      <GenderSettingsCard initialGender={initialGender} />
 
       <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">
@@ -70,7 +138,6 @@ export function SettingsWorkspace({
         <div className="mt-2 divide-y divide-rose-100/70 dark:divide-white/5">
           <ToggleRow
             checked={settings.notificationsEnabled}
-            disabled={isSaving}
             label="Bildirimler"
             onChange={(value) =>
               void handleUpdate("Bildirimler", { notificationsEnabled: value })
@@ -78,7 +145,6 @@ export function SettingsWorkspace({
           />
           <ToggleRow
             checked={settings.animationEnabled}
-            disabled={isSaving}
             label="Animasyonlar"
             onChange={(value) =>
               void handleUpdate("Animasyonlar", { animationEnabled: value })
@@ -86,7 +152,6 @@ export function SettingsWorkspace({
           />
           <ToggleRow
             checked={settings.hapticsEnabled}
-            disabled={isSaving}
             label="Titreşim"
             onChange={(value) =>
               void handleUpdate("Titreşim", { hapticsEnabled: value })
@@ -99,7 +164,6 @@ export function SettingsWorkspace({
         <p className="font-semibold text-slate-800 dark:text-slate-100">Dil</p>
         <div className="mt-3">
           <LanguageSwitcher
-            disabled={isSaving}
             onChange={(language) => void handleUpdate("Dil", { language })}
             value={settings.language}
           />
@@ -107,10 +171,57 @@ export function SettingsWorkspace({
       </Card>
 
       <NotificationPreferencesCard
-        disabled={isSaving || !settings.notificationsEnabled}
+        disabled={!settings.notificationsEnabled}
         onChange={handleNotificationPreferenceChange}
         preferences={settings.notificationPreferences}
       />
+
+      <NotificationPermissionSettingsCard />
+
+      {coupleId ? (
+        <LocationSettingsCard
+          coupleId={coupleId}
+          currentUserId={userId}
+          partnerId={partnerId}
+        />
+      ) : null}
+
+      {inviteCode ? (
+        <Card className="w-full overflow-hidden">
+          <p className="font-semibold text-slate-800 dark:text-slate-100">
+            Partnerini davet et
+          </p>
+          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Davet bağlantısını partnerine gönder; kayıt olduktan sonra çifte
+            doğrudan katılabilir.
+          </p>
+          <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-center text-sm font-bold tracking-[0.2em] text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
+            {inviteCode}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.98]"
+              onClick={handleCopyInvite}
+              type="button"
+            >
+              {isInviteCopied ? (
+                <Check className="size-4" />
+              ) : (
+                <Copy className="size-4" />
+              )}
+              {isInviteCopied ? "Kopyalandı" : "Bağlantıyı kopyala"}
+            </button>
+            <button
+              aria-label="Davet bağlantısını paylaş"
+              className="grid size-11 place-items-center rounded-xl bg-rose-100 text-rose-600 transition hover:bg-rose-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-[0.98] dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30"
+              onClick={handleShareInvite}
+              type="button"
+            >
+              <Share2 className="size-4" />
+            </button>
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">

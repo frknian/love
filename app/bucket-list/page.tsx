@@ -19,7 +19,7 @@ export default async function BucketListPage() {
           <Target className="size-7" />
         </span>
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-800 dark:text-slate-100">
-          Bucket List
+          Yapmak İstediklerimiz
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
           Birlikte yapmak istediğiniz her şeyi listeleyin, tamamladıkça

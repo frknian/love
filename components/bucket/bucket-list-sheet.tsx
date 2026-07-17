@@ -62,7 +62,7 @@ export function BucketListSheet({ onClose, onSubmit }: BucketListSheetProps) {
       >
         <motion.section
           animate={{ y: 0 }}
-          aria-label="Yeni bucket list"
+          aria-label="Yeni yapılacaklar listesi"
           aria-modal="true"
           className="absolute inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-2xl overflow-y-auto rounded-t-[2rem] bg-[#fffafd] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900"
           exit={{ y: "100%" }}
@@ -74,7 +74,7 @@ export function BucketListSheet({ onClose, onSubmit }: BucketListSheetProps) {
           <div className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-              Yeni bucket list
+              Yeni liste
             </h2>
             <button
               aria-label="Kapat"

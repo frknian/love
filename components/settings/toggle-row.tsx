@@ -29,7 +29,7 @@ export function ToggleRow({
       <button
         aria-checked={checked}
         aria-label={label}
-        className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-60 ${
+        className={`relative h-7 w-12 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
           checked ? "bg-rose-500" : "bg-slate-200 dark:bg-white/10"
         }`}
         disabled={disabled}
@@ -38,7 +38,7 @@ export function ToggleRow({
         type="button"
       >
         <span
-          className={`absolute top-1 size-5 rounded-full bg-white shadow transition-transform ${
+          className={`absolute left-0 top-1 size-5 rounded-full bg-white shadow transition-transform ${
             checked ? "translate-x-6" : "translate-x-1"
           }`}
         />

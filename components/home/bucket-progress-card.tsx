@@ -13,7 +13,7 @@ export function BucketProgressCard({ list }: BucketProgressCardProps) {
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Bucket List ilerlemesi</p>
+        <p className="text-sm text-slate-500">Yapmak İstediklerimiz</p>
         <Target aria-hidden="true" className="size-4 text-rose-300" />
       </div>
       {list ? (
@@ -47,7 +47,7 @@ export function BucketProgressCard({ list }: BucketProgressCardProps) {
         className="mt-3 inline-flex items-center gap-0.5 text-xs font-semibold text-rose-500 hover:text-rose-600"
         href="/bucket-list"
       >
-        Bucket List
+        Yapmak İstediklerimiz
         <ChevronRight className="size-3.5" />
       </Link>
     </Card>

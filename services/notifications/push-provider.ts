@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * Push bildirim sağlayıcı soyutlaması.
- *
- * Web Push / FCM gibi gerçek bir sağlayıcı eklemek için `PushProvider`
- * arayüzünü uygulayan yeni bir sınıf yazıp `getPushProvider` içindeki
- * seçim mantığına eklemek yeterlidir; bildirim gönderim akışı değişmez.
- */
 export interface PushPayload {
   title: string;
   body: string;
@@ -21,26 +14,49 @@ export interface PushProvider {
   notify(payload: PushPayload): Promise<void>;
 }
 
-/** Push altyapısı hazır olana kadar sessizce çalışan varsayılan sağlayıcı. */
-class NoopPushProvider implements PushProvider {
-  readonly name = "noop";
+class BrowserPushProvider implements PushProvider {
+  readonly name = "browser-notification";
 
   isSupported(): boolean {
-    return false;
+    return typeof window !== "undefined" && "Notification" in window;
   }
 
   async requestPermission(): Promise<boolean> {
-    return false;
+    if (!this.isSupported()) return false;
+    if (Notification.permission === "granted") return true;
+    return (await Notification.requestPermission()) === "granted";
   }
 
-  async notify(): Promise<void> {
-    // Bilinçli olarak boş: gerçek sağlayıcı eklenene kadar no-op.
+  async notify(payload: PushPayload): Promise<void> {
+    if (!this.isSupported() || Notification.permission !== "granted") return;
+    const registration = await navigator.serviceWorker?.ready;
+    if (registration) {
+      await registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: payload.icon ?? "/icons/icon.svg",
+        tag: payload.tag,
+      });
+      return;
+    }
+    new Notification(payload.title, payload);
   }
+}
+
+class NoopPushProvider implements PushProvider {
+  readonly name = "noop";
+  isSupported(): boolean { return false; }
+  async requestPermission(): Promise<boolean> { return false; }
+  async notify(): Promise<void> {}
 }
 
 let provider: PushProvider | null = null;
 
 export function getPushProvider(): PushProvider {
-  if (!provider) provider = new NoopPushProvider();
+  if (!provider) {
+    provider =
+      typeof window !== "undefined" && "Notification" in window
+        ? new BrowserPushProvider()
+        : new NoopPushProvider();
+  }
   return provider;
 }

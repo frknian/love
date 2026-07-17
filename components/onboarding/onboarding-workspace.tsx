@@ -16,14 +16,21 @@ import { ZodError } from "zod";
 
 import { onboardingService } from "@/services/onboarding/onboarding-service";
 import type { OnboardingMode } from "@/types/onboarding";
+import { genderLabels, genderOptions, type Gender } from "@/types/profile";
 
 interface OnboardingWorkspaceProps {
+  initialInviteCode?: string;
   userId: string;
 }
 
-export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
+export function OnboardingWorkspace({
+  initialInviteCode,
+  userId,
+}: OnboardingWorkspaceProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<OnboardingMode>("create");
+  const [mode, setMode] = useState<OnboardingMode>(
+    initialInviteCode ? "join" : "create",
+  );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,12 +51,14 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
 
     const formData = new FormData(event.currentTarget);
     const displayName = String(formData.get("displayName") ?? "");
+    const gender = String(formData.get("gender") ?? "") as Gender;
 
     try {
       if (mode === "create") {
         const result = await onboardingService.createCouple(
           userId,
           displayName,
+          gender,
           avatarFile,
         );
         setCreatedInvite(result.inviteCode);
@@ -58,6 +67,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
           userId,
           String(formData.get("inviteCode") ?? ""),
           displayName,
+          gender,
           avatarFile,
         );
         router.replace("/");
@@ -76,21 +86,42 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
     }
   }
 
-  async function handleCopyCode() {
+  function getInviteUrl() {
     if (!createdInvite) return;
-    await navigator.clipboard.writeText(createdInvite);
-    setIsCopied(true);
-    window.setTimeout(() => setIsCopied(false), 2000);
+    const inviteUrl = new URL("/kayit", window.location.origin);
+    inviteUrl.searchParams.set("invite", createdInvite);
+    return inviteUrl.toString();
+  }
+
+  async function handleCopyInvite() {
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setError("Bağlantı kopyalanamadı. Paylaş butonunu deneyebilirsin.");
+    }
   }
 
   async function handleShareCode() {
-    if (!createdInvite) return;
-    const shareText = `Bizim Hikâyemiz'e katılmak için davet kodum: ${createdInvite}`;
+    const inviteUrl = getInviteUrl();
+    if (!inviteUrl) return;
+
+    const shareText =
+      "Bizim Hikâyemiz'e katılman için sana bir davet gönderdim.";
     if (navigator.share) {
-      await navigator.share({ text: shareText }).catch(() => undefined);
+      await navigator
+        .share({
+          title: "Bizim Hikâyemiz daveti",
+          text: shareText,
+          url: inviteUrl,
+        })
+        .catch(() => undefined);
       return;
     }
-    await handleCopyCode();
+    await handleCopyInvite();
   }
 
   if (createdInvite) {
@@ -105,8 +136,8 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
           Çiftiniz oluşturuldu!
         </p>
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          Bu kodu partnerine gönder, kayıt olurken &ldquo;Davet koduyla
-          katıl&rdquo; seçeneğinden girsin.
+          Partnerine davet bağlantısını gönder; kayıt olduktan sonra çifte
+          katılım ekranı onun için hazır olacak.
         </p>
         <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-2xl font-bold tracking-[0.3em] text-rose-600">
           {createdInvite}
@@ -114,7 +145,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
         <div className="mt-4 flex gap-2">
           <button
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm"
-            onClick={handleCopyCode}
+            onClick={handleCopyInvite}
             type="button"
           >
             {isCopied ? (
@@ -122,7 +153,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
             ) : (
               <Copy className="size-4" />
             )}
-            {isCopied ? "Kopyalandı" : "Kopyala"}
+            {isCopied ? "Kopyalandı" : "Bağlantıyı kopyala"}
           </button>
           <button
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm"
@@ -227,6 +258,30 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
         />
       </label>
 
+      <label className="block">
+        <span className="mb-2 block text-sm font-medium text-slate-700">
+          Cinsiyet
+        </span>
+        <select
+          className="w-full rounded-2xl border border-rose-100 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none focus:border-rose-300"
+          defaultValue=""
+          name="gender"
+          required
+        >
+          <option disabled value="">
+            Seçim yap
+          </option>
+          {genderOptions.map((option) => (
+            <option key={option} value={option}>
+              {genderLabels[option]}
+            </option>
+          ))}
+        </select>
+        <span className="mt-1.5 block text-xs leading-5 text-slate-400">
+          Yalnızca gerekli özellikleri yetkilendirmek için kullanılır.
+        </span>
+      </label>
+
       <AnimatePresence initial={false}>
         {mode === "join" ? (
           <motion.label
@@ -242,6 +297,7 @@ export function OnboardingWorkspace({ userId }: OnboardingWorkspaceProps) {
               className="w-full rounded-2xl border border-rose-100 bg-white/80 px-4 py-3 text-sm uppercase tracking-widest text-slate-700 outline-none focus:border-rose-300"
               maxLength={16}
               name="inviteCode"
+              defaultValue={initialInviteCode}
               placeholder="ör. AB12CD34"
               required={mode === "join"}
             />

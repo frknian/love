@@ -5,15 +5,13 @@ const SIGNUP_PATH = "/kayit";
 const AUTH_CALLBACK_PATH = "/auth/callback";
 const COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
 const COOKIE_CHUNK_SIZE = 3180;
+/** Token bitimine bu kadar kala yenileme başlatılır. */
+const TOKEN_EXPIRY_MARGIN_MS = 30_000;
 
 interface SupabaseSession {
   access_token: string;
   refresh_token: string;
   user?: { email?: string };
-}
-
-interface SupabaseUser {
-  email?: string;
 }
 
 function getCookieName(supabaseUrl: string) {
@@ -101,12 +99,30 @@ function writeSession(
   );
 }
 
-async function fetchUser(url: string, key: string, accessToken: string) {
-  const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: key, Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) return null;
-  return (await response.json()) as SupabaseUser;
+/**
+ * Access token'ın `exp` alanını yerel olarak okur; ağ isteği yapmaz.
+ * Middleware yalnızca bir yönlendirme kapısıdır: asıl kimlik doğrulaması
+ * sunucu bileşenlerindeki `auth.getUser()` ve veritabanındaki RLS
+ * politikalarında yapılır. Bu yüzden burada imza doğrulamak yerine sadece
+ * sürenin geçip geçmediğine bakmak hem güvenli hem de her istekte
+ * Supabase'e gidilen bir ağ turunu ortadan kaldırdığı için çok daha hızlıdır.
+ */
+function getJwtExpiry(accessToken: string): number | null {
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const bytes = Uint8Array.from(atob(padded), (character) =>
+      character.charCodeAt(0),
+    );
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as {
+      exp?: number;
+    };
+    return typeof claims.exp === "number" ? claims.exp : null;
+  } catch {
+    return null;
+  }
 }
 
 async function refreshSession(url: string, key: string, refreshToken: string) {
@@ -129,21 +145,28 @@ export async function middleware(request: NextRequest) {
 
   const cookieName = getCookieName(url);
   const response = NextResponse.next({ request });
-  let session = getSession(request, cookieName);
-  let user = session ? await fetchUser(url, key, session.access_token) : null;
+  const session = getSession(request, cookieName);
 
-  if (!user && session?.refresh_token) {
-    const refreshedSession = await refreshSession(
-      url,
-      key,
-      session.refresh_token,
-    );
-    if (refreshedSession) {
-      session = refreshedSession;
-      user =
-        refreshedSession.user ??
-        (await fetchUser(url, key, refreshedSession.access_token));
-      writeSession(response, request, cookieName, refreshedSession);
+  // Token süresi dolmadıysa ağa hiç çıkmadan devam et; yalnızca süre
+  // dolmak üzereyken/refresh gerektiğinde Supabase'e tek istek atılır.
+  let isAuthenticated = false;
+  if (session?.access_token) {
+    const expiry = getJwtExpiry(session.access_token);
+    if (
+      expiry !== null &&
+      expiry * 1000 > Date.now() + TOKEN_EXPIRY_MARGIN_MS
+    ) {
+      isAuthenticated = true;
+    } else if (session.refresh_token) {
+      const refreshedSession = await refreshSession(
+        url,
+        key,
+        session.refresh_token,
+      );
+      if (refreshedSession) {
+        writeSession(response, request, cookieName, refreshedSession);
+        isAuthenticated = true;
+      }
     }
   }
 
@@ -163,8 +186,7 @@ export async function middleware(request: NextRequest) {
 
   const isLoginRoute = request.nextUrl.pathname === LOGIN_PATH;
   const isSignupRoute = request.nextUrl.pathname === SIGNUP_PATH;
-  const isAuthCallbackRoute =
-    request.nextUrl.pathname === AUTH_CALLBACK_PATH;
+  const isAuthCallbackRoute = request.nextUrl.pathname === AUTH_CALLBACK_PATH;
   const isDevelopmentLoginRoute =
     process.env.NODE_ENV === "development" &&
     request.nextUrl.pathname === "/api/auth/development-login";
@@ -173,9 +195,13 @@ export async function middleware(request: NextRequest) {
     isSignupRoute ||
     isAuthCallbackRoute ||
     isDevelopmentLoginRoute;
-  if (!user && !isPublicRoute)
+  if (!isAuthenticated && !isPublicRoute)
     return redirect(LOGIN_PATH, { next: request.nextUrl.pathname });
-  if (user && (isLoginRoute || isSignupRoute)) return redirect("/");
+  if (isAuthenticated && isSignupRoute) {
+    const invite = request.nextUrl.searchParams.get("invite");
+    return redirect("/onboarding", invite ? { invite } : undefined);
+  }
+  if (isAuthenticated && isLoginRoute) return redirect("/");
   return response;
 }
 

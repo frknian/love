@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { RealtimeNotificationListener } from "@/components/notifications/realtime-notification-listener";
+import { NotificationPermissionCard } from "@/components/notifications/notification-permission-card";
 import { getEngagementContext } from "@/lib/notifications/queries";
+import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
 interface PageShellProps {
@@ -24,15 +26,21 @@ export async function PageShell({ children }: PageShellProps) {
     redirect("/onboarding");
   }
 
+  const settings = await getOrCreateUserSettings(user.id);
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-4 pb-28 pt-6 sm:px-6 sm:pt-10">
       <AppHeader currentUserId={engagement?.userId} user={user} />
       {children}
       <BottomNavigation />
+      <NotificationPermissionCard />
       {engagement ? (
         <RealtimeNotificationListener
           coupleId={engagement.coupleId}
           currentUserId={engagement.userId}
+          hapticsEnabled={settings.hapticsEnabled}
+          notificationPreferences={settings.notificationPreferences}
+          notificationsEnabled={settings.notificationsEnabled}
           partnerName={engagement.partnerName ?? "Partner"}
         />
       ) : null}

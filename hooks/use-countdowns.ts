@@ -76,7 +76,12 @@ export function useCountdowns({
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "countdowns" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "countdowns",
+          filter: `couple_id=eq.${coupleId}`,
+        },
         handleChange,
       )
       .subscribe((status) => {

@@ -86,7 +86,12 @@ export function useEvents({
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "events" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "events",
+          filter: `couple_id=eq.${coupleId}`,
+        },
         handleChange,
       )
       .subscribe((status) => {

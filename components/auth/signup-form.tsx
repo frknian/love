@@ -1,7 +1,7 @@
 "use client";
 
 import { LoaderCircle, LockKeyhole, Mail, MailCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { ZodError } from "zod";
 
@@ -9,9 +9,14 @@ import { signupService } from "@/services/auth/signup-service";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const inviteCode = searchParams.get("invite")?.trim();
+  const onboardingPath = inviteCode
+    ? `/onboarding?invite=${encodeURIComponent(inviteCode)}`
+    : "/onboarding";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -20,14 +25,19 @@ export function SignupForm() {
 
     const formData = new FormData(event.currentTarget);
     try {
-      const result = await signupService.signUp({
-        email: String(formData.get("email") ?? ""),
-        password: String(formData.get("password") ?? ""),
-        confirmPassword: String(formData.get("confirmPassword") ?? ""),
-      });
+      const result = await signupService.signUp(
+        {
+          email: String(formData.get("email") ?? ""),
+          password: String(formData.get("password") ?? ""),
+          confirmPassword: String(formData.get("confirmPassword") ?? ""),
+        },
+        {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(onboardingPath)}`,
+        },
+      );
 
       if (result.hasSession) {
-        router.replace("/onboarding");
+        router.replace(onboardingPath);
         router.refresh();
         return;
       }

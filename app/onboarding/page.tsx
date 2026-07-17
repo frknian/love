@@ -4,8 +4,14 @@ import { redirect } from "next/navigation";
 import { OnboardingWorkspace } from "@/components/onboarding/onboarding-workspace";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
-export default async function OnboardingPage() {
-  const user = await getCurrentAppUser();
+interface OnboardingPageProps {
+  searchParams: Promise<{ invite?: string }>;
+}
+
+export default async function OnboardingPage({
+  searchParams,
+}: OnboardingPageProps) {
+  const [user, params] = await Promise.all([getCurrentAppUser(), searchParams]);
 
   if (!user) {
     redirect("/login");
@@ -27,7 +33,10 @@ export default async function OnboardingPage() {
           Yeni bir çift oluştur ya da partnerinin sana gönderdiği davet koduyla
           ona katıl.
         </p>
-        <OnboardingWorkspace userId={user.id} />
+        <OnboardingWorkspace
+          initialInviteCode={params.invite?.trim().slice(0, 16)}
+          userId={user.id}
+        />
       </section>
     </main>
   );

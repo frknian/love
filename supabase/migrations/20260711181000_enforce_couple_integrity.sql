@@ -40,7 +40,10 @@ alter table public.bucket_lists
 alter table public.bucket_items
   add constraint bucket_items_list_couple_id_fkey
   foreign key (bucket_list_id, couple_id)
-  references public.bucket_lists(id, couple_id) on delete cascade;
+  references public.bucket_lists(id, couple_id) on delete cascade,
+  add constraint bucket_items_completed_by_couple_id_fkey
+  foreign key (completed_by, couple_id)
+  references public.profiles(id, couple_id) on delete set null;
 
 alter table public.journals
   add constraint journals_author_id_couple_id_fkey

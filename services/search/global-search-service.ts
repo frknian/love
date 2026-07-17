@@ -7,9 +7,13 @@ const groupLabels: Record<SearchResultGroup["category"], string> = {
   memories: "Anılar",
   notes: "Notlar",
   journals: "Günlük",
-  bucket: "Bucket List",
+  bucket: "Yapmak İstediklerimiz",
   events: "Etkinlikler",
 };
+
+function escapePostgrestValue(value: string) {
+  return value.replace(/[\\(),]/g, "\\$&");
+}
 
 async function searchMemories(query: string): Promise<SearchResultItem[]> {
   const { data } = await createClient()
@@ -28,10 +32,11 @@ async function searchMemories(query: string): Promise<SearchResultItem[]> {
 }
 
 async function searchNotes(query: string): Promise<SearchResultItem[]> {
+  const safeQuery = escapePostgrestValue(query);
   const { data } = await createClient()
     .from("notes")
     .select("id, title, content")
-    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
     .limit(5);
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -44,10 +49,11 @@ async function searchNotes(query: string): Promise<SearchResultItem[]> {
 }
 
 async function searchJournals(query: string): Promise<SearchResultItem[]> {
+  const safeQuery = escapePostgrestValue(query);
   const { data } = await createClient()
     .from("journals")
     .select("id, title, content")
-    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
     .limit(5);
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -75,10 +81,11 @@ async function searchBucketItems(query: string): Promise<SearchResultItem[]> {
 }
 
 async function searchEvents(query: string): Promise<SearchResultItem[]> {
+  const safeQuery = escapePostgrestValue(query);
   const { data } = await createClient()
     .from("events")
     .select("id, title, description")
-    .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    .or(`title.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`)
     .limit(5);
   return (data ?? []).map((row) => ({
     id: row.id,
