@@ -55,6 +55,8 @@ export function useCoupleLocation({
   const [loadError, setLoadError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  // Her uygulama/site açılışında yalnızca bir kez taze konum isteği başlatılır.
+  const refreshedOnOpenRef = useRef(false);
 
   const updatePermission = useCallback((next: LocationPermissionState) => {
     permissionRef.current = next;
@@ -287,7 +289,14 @@ export function useCoupleLocation({
   }, [recheckPermission]);
 
   useEffect(() => {
-    if (sharing === "enabled" && permission === "granted") void refresh(false);
+    if (
+      sharing === "enabled" &&
+      permission === "granted" &&
+      !refreshedOnOpenRef.current
+    ) {
+      refreshedOnOpenRef.current = true;
+      void refresh(true);
+    }
   }, [permission, refresh, sharing]);
 
   const hasOwnCoordinates =

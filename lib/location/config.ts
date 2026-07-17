@@ -4,6 +4,7 @@ export const locationConfig = {
   minimumMovementMeters: 250,
   requestTimeoutMs: 12_000,
   staleAfterMs: 3 * 60 * 60 * 1000,
-  maximumCachedAgeMs: 5 * 60 * 1000,
+  // Site her açıldığında tarayıcı önbelleği yerine yeni konum alınır.
+  maximumCachedAgeMs: 0,
   enableHighAccuracy: false,
 } as const;
