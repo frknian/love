@@ -61,7 +61,17 @@ export const notificationsService = {
       .single();
     if (error) throw new Error("Bildirim gönderilemedi.");
 
-    return data as NotificationRow;
+    const notification = data as NotificationRow;
+    // Veritabanı kaydı ana işlemdir. Push servisi geçici olarak erişilemezse
+    // uygulama içi Realtime bildirimi çalışmaya devam eder.
+    await fetch("/api/push/send", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notificationId: notification.id }),
+    }).catch(() => undefined);
+
+    return notification;
   },
 
   async markAsRead(notificationId: string): Promise<void> {

@@ -1,8 +1,13 @@
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const SHELL_CACHE = `our-space-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `our-space-runtime-${CACHE_VERSION}`;
 const IMAGE_CACHE = `our-space-images-${CACHE_VERSION}`;
-const APP_SHELL = ["/", "/offline", "/manifest.webmanifest", "/icons/icon.svg"];
+const APP_SHELL = [
+  "/",
+  "/offline",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+];
 
 async function cacheFirst(request) {
   const cached = await caches.match(request);
@@ -77,15 +82,45 @@ self.addEventListener("sync", (event) => {
     );
 });
 
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {
+      title: "Bizim Hikâyemiz",
+      body: "Yeni bir bildirimin var.",
+    };
+  }
+
+  // Safari görünmez push'a izin vermez. Her push olayı, aynı event içinde
+  // kullanıcıya görünür bir bildirime dönüştürülür.
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Bizim Hikâyemiz", {
+      body: payload.body || "Yeni bir bildirimin var.",
+      icon: payload.icon || "/icons/icon-192.png",
+      tag: payload.tag || "our-story-notification",
+      data: { url: payload.url || "/bildirimler" },
+    }),
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const requestedUrl = event.notification.data?.url || "/bildirimler";
+  const target = new URL(requestedUrl, self.location.origin);
+  const safeUrl =
+    target.origin === self.location.origin ? target.href : "/bildirimler";
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clients) => {
         const existing = clients.find((client) => "focus" in client);
-        if (existing) return existing.focus();
-        return self.clients.openWindow("/bildirimler");
+        if (existing)
+          return existing
+            .navigate(safeUrl)
+            .then((navigatedClient) => navigatedClient?.focus());
+        return self.clients.openWindow(safeUrl);
       }),
   );
 });
@@ -103,7 +138,7 @@ self.addEventListener("fetch", (event) => {
   }
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname === "/icons/icon.svg"
+    url.pathname.startsWith("/icons/")
   ) {
     event.respondWith(cacheFirst(event.request));
     return;

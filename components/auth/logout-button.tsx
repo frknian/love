@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { getPushProvider } from "@/services/notifications/push-provider";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -12,6 +13,11 @@ export function LogoutButton() {
 
   async function handleLogout() {
     setIsLoading(true);
+    // Aynı cihazda farklı hesaba geçildiğinde eski kullanıcıya push
+    // gönderilmesini önlemek için aboneliği oturum kapanmadan kaldır.
+    await getPushProvider()
+      .unsubscribe()
+      .catch(() => undefined);
     await createClient().auth.signOut();
     navigator.serviceWorker?.controller?.postMessage({
       type: "CLEAR_PRIVATE_CACHE",
