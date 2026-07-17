@@ -4,6 +4,7 @@ import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { LogoutButton } from "@/components/auth/logout-button";
+import { GenderSettingsCard } from "@/components/settings/gender-settings-card";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
 import { NotificationPermissionSettingsCard } from "@/components/notifications/notification-permission-settings-card";
@@ -15,8 +16,10 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-provider";
 import { useSettings } from "@/hooks/use-settings";
 import type { NotificationPreferenceKey, UserSettings } from "@/types/settings";
+import type { Gender } from "@/types/profile";
 
 interface SettingsWorkspaceProps {
+  initialGender: Gender;
   initialSettings: UserSettings;
   inviteCode?: string;
   coupleId: string;
@@ -25,6 +28,7 @@ interface SettingsWorkspaceProps {
 }
 
 export function SettingsWorkspace({
+  initialGender,
   initialSettings,
   inviteCode,
   coupleId,
@@ -124,6 +128,8 @@ export function SettingsWorkspace({
           />
         </div>
       </Card>
+
+      <GenderSettingsCard initialGender={initialGender} />
 
       <Card className="w-full overflow-hidden">
         <p className="font-semibold text-slate-800 dark:text-slate-100">

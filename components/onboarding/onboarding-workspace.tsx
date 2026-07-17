@@ -16,6 +16,7 @@ import { ZodError } from "zod";
 
 import { onboardingService } from "@/services/onboarding/onboarding-service";
 import type { OnboardingMode } from "@/types/onboarding";
+import { genderLabels, genderOptions, type Gender } from "@/types/profile";
 
 interface OnboardingWorkspaceProps {
   initialInviteCode?: string;
@@ -50,12 +51,14 @@ export function OnboardingWorkspace({
 
     const formData = new FormData(event.currentTarget);
     const displayName = String(formData.get("displayName") ?? "");
+    const gender = String(formData.get("gender") ?? "") as Gender;
 
     try {
       if (mode === "create") {
         const result = await onboardingService.createCouple(
           userId,
           displayName,
+          gender,
           avatarFile,
         );
         setCreatedInvite(result.inviteCode);
@@ -64,6 +67,7 @@ export function OnboardingWorkspace({
           userId,
           String(formData.get("inviteCode") ?? ""),
           displayName,
+          gender,
           avatarFile,
         );
         router.replace("/");
@@ -252,6 +256,30 @@ export function OnboardingWorkspace({
           placeholder="Görünen adın"
           required
         />
+      </label>
+
+      <label className="block">
+        <span className="mb-2 block text-sm font-medium text-slate-700">
+          Cinsiyet
+        </span>
+        <select
+          className="w-full rounded-2xl border border-rose-100 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none focus:border-rose-300"
+          defaultValue=""
+          name="gender"
+          required
+        >
+          <option disabled value="">
+            Seçim yap
+          </option>
+          {genderOptions.map((option) => (
+            <option key={option} value={option}>
+              {genderLabels[option]}
+            </option>
+          ))}
+        </select>
+        <span className="mt-1.5 block text-xs leading-5 text-slate-400">
+          Yalnızca gerekli özellikleri yetkilendirmek için kullanılır.
+        </span>
       </label>
 
       <AnimatePresence initial={false}>

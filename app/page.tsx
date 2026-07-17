@@ -20,6 +20,7 @@ import { getCountdowns } from "@/lib/countdowns/queries";
 import { toUpcomingOccurrences } from "@/lib/events/calendar";
 import { getEvents } from "@/lib/events/queries";
 import { getLatestJournalEntry } from "@/lib/journal/queries";
+import { getMyGender } from "@/lib/profile/gender";
 import {
   getEngagementContext,
   getLatestNotification,
@@ -47,6 +48,7 @@ export default async function HomePage() {
     bucketItems,
     latestJournalEntry,
     nextCapsule,
+    gender,
   ] = await Promise.all([
     getEngagementContext(),
     getLatestNotification().catch(() => null),
@@ -56,6 +58,7 @@ export default async function HomePage() {
     getBucketItems().catch(() => []),
     getLatestJournalEntry().catch(() => null),
     getNextLockedCapsule().catch(() => null),
+    getMyGender(),
   ]);
 
   const upcomingOccurrences = toUpcomingOccurrences(events).slice(0, 3);
@@ -115,6 +118,7 @@ export default async function HomePage() {
         {context?.partnerId ? (
           <MoodStatusCard
             coupleId={context.coupleId}
+            currentUserGender={gender}
             currentUserId={context.userId}
             currentUserName={context.displayName}
             partnerId={context.partnerId}

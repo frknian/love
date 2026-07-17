@@ -1,3 +1,4 @@
+import { canUsePeriodMode, type Gender } from "@/types/profile";
 import type { MoodKey } from "@/types/social";
 
 export const moodCatalog: ReadonlyArray<{
@@ -22,6 +23,14 @@ export const moodCatalog: ReadonlyArray<{
   { key: "sick", label: "Hastayım", emoji: "🤒" },
   { key: "period", label: "Regl", emoji: "🌸" },
 ] as const;
+
+const nonPeriodMoodCatalog = moodCatalog.filter(
+  (mood) => mood.key !== "period",
+);
+
+export function moodsForGender(gender: Gender) {
+  return canUsePeriodMode(gender) ? moodCatalog : nonPeriodMoodCatalog;
+}
 
 export function getMoodDefinition(mood: MoodKey | undefined) {
   return moodCatalog.find((item) => item.key === mood);

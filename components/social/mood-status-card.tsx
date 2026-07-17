@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/toast-provider";
 import { formatRelativeTimeTr } from "@/lib/date-utils";
 import {
   getMoodDefinition,
-  moodCatalog,
+  moodsForGender,
   partnerCallLabel,
 } from "@/lib/social/mood-catalog";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,7 @@ import {
   socialService,
   type PlanInput,
 } from "@/services/social/social-service";
+import { canUsePeriodMode, type Gender } from "@/types/profile";
 import type {
   MoodEntryRow,
   PlanRequestRow,
@@ -25,6 +26,7 @@ import type {
 
 interface MoodStatusCardProps {
   coupleId: string;
+  currentUserGender: Gender;
   currentUserId: string;
   currentUserName: string;
   partnerId: string;
@@ -35,6 +37,7 @@ const QUICK_COOLDOWN_MS = 30_000;
 
 export function MoodStatusCard({
   coupleId,
+  currentUserGender,
   currentUserId,
   currentUserName,
   partnerId,
@@ -51,6 +54,8 @@ export function MoodStatusCard({
   const [callNote, setCallNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const periodModeEnabled = canUsePeriodMode(currentUserGender);
+  const availableMoods = moodsForGender(currentUserGender);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -117,7 +122,11 @@ export function MoodStatusCard({
     };
   }, [coupleId, load]);
 
-  const myMood = moods.find((mood) => mood.created_by === currentUserId);
+  const myMood = moods.find(
+    (mood) =>
+      mood.created_by === currentUserId &&
+      (mood.mood !== "period" || periodModeEnabled),
+  );
   const partnerMood = moods.find((mood) => mood.created_by === partnerId);
   const myStatuses = statuses.filter(
     (status) => status.created_by === currentUserId && status.active,
@@ -148,6 +157,10 @@ export function MoodStatusCard({
   }
 
   async function selectMood(mood: MoodEntryRow["mood"]) {
+    if (mood === "period" && !periodModeEnabled) {
+      showToast("Regl modu bu profil için kullanılamaz.", "error");
+      return;
+    }
     if (myMood?.mood === mood) {
       setShowMoods(false);
       showToast("Bu mod zaten seçili.");
@@ -184,6 +197,12 @@ export function MoodStatusCard({
     if (Date.now() < cooldownUntil || isSaving) return;
     setIsSaving(true);
     try {
+      await socialService.setQuickStatus(
+        coupleId,
+        currentUserId,
+        "period",
+        callNote,
+      );
       await notifyPartner(
         "partner_call",
         `${currentUserName} sana ihtiyaç duyuyor ❤️`,
@@ -359,7 +378,7 @@ export function MoodStatusCard({
 
       {showMoods ? (
         <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
-          {moodCatalog.map((mood) => (
+          {availableMoods.map((mood) => (
             <button
               aria-label={`Modumu ${mood.label} yap`}
               className="rounded-2xl bg-slate-50 px-1 py-2 text-center transition hover:bg-rose-50 disabled:opacity-50 dark:bg-white/[0.04]"
@@ -381,18 +400,31 @@ export function MoodStatusCard({
         <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">
           Hızlı durumlar
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <button
-            className="rounded-2xl bg-pink-50 px-2 py-3 text-xs font-semibold text-pink-700"
-            onClick={() =>
-              void socialService
-                .setQuickStatus(coupleId, currentUserId, "period", null)
-                .then(load)
-            }
-            type="button"
-          >
-            🌸 Regl
-          </button>
+        <div
+          className={`mt-3 grid gap-2 ${
+            periodModeEnabled ? "grid-cols-3" : "grid-cols-2"
+          }`}
+        >
+          {periodModeEnabled ? (
+            <button
+              className="rounded-2xl bg-pink-50 px-2 py-3 text-xs font-semibold text-pink-700"
+              onClick={() => {
+                const status = myStatuses.find(
+                  (item) => item.status_type === "period",
+                );
+                setCallNote(status?.details ?? "");
+                void socialService
+                  .setQuickStatus(coupleId, currentUserId, "period", null)
+                  .then(load)
+                  .catch(() =>
+                    showToast("Regl modu etkinleştirilemedi.", "error"),
+                  );
+              }}
+              type="button"
+            >
+              🌸 Regl Oldum
+            </button>
+          ) : null}
           <button
             className="rounded-2xl bg-amber-50 px-2 py-3 text-xs font-semibold text-amber-700"
             onClick={() => {
@@ -416,8 +448,12 @@ export function MoodStatusCard({
         </div>
       </div>
 
-      {myStatuses.some((status) => status.status_type === "period") ? (
+      {periodModeEnabled &&
+      myStatuses.some((status) => status.status_type === "period") ? (
         <div className="mt-3 rounded-2xl bg-pink-50 p-3 dark:bg-pink-500/10">
+          <p className="mb-2 text-sm font-semibold text-pink-700 dark:text-pink-300">
+            Regl Modu Aktif
+          </p>
           <input
             className="w-full rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm"
             maxLength={160}
@@ -514,18 +550,35 @@ export function MoodStatusCard({
 
       {partnerStatuses.length ? (
         <div className="mt-3 space-y-2">
-          {partnerStatuses.map((status) => (
-            <p
-              className="rounded-xl bg-rose-50 px-3 py-2 text-xs text-slate-600 dark:bg-white/[0.04] dark:text-slate-300"
-              key={status.id}
-            >
-              {status.status_type === "hunger"
-                ? `🍕 ${partnerName}’ın canı ${status.details ?? "bir şeyler"} çekiyor.`
-                : status.status_type === "period"
-                  ? `🌸 ${partnerName} bugün biraz ilgiye ihtiyaç duyabilir.`
+          {partnerStatuses.map((status) =>
+            status.status_type === "period" ? (
+              <div
+                className="rounded-xl bg-pink-50 px-3 py-3 text-xs text-slate-600 dark:bg-pink-500/10 dark:text-slate-300"
+                key={status.id}
+              >
+                <p className="font-semibold text-pink-700 dark:text-pink-300">
+                  🌸 Regl Modu Aktif
+                </p>
+                <p className="mt-1">
+                  {partnerName} bugün biraz ilgiye ihtiyaç duyabilir.
+                </p>
+                {status.details ? (
+                  <p className="mt-2 rounded-lg bg-white/80 px-2 py-1.5 italic dark:bg-white/[0.06]">
+                    “{status.details}”
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p
+                className="rounded-xl bg-rose-50 px-3 py-2 text-xs text-slate-600 dark:bg-white/[0.04] dark:text-slate-300"
+                key={status.id}
+              >
+                {status.status_type === "hunger"
+                  ? `🍕 ${partnerName}’ın canı ${status.details ?? "bir şeyler"} çekiyor.`
                   : `🎬 ${partnerName} birlikte bir plan yapmak istiyor.`}
-            </p>
-          ))}
+              </p>
+            ),
+          )}
         </div>
       ) : null}
 

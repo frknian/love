@@ -3,6 +3,7 @@ import { Settings } from "lucide-react";
 import { PageShell } from "@/components/layout/page-shell";
 import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
 import { SettingsWorkspace } from "@/components/settings/settings-workspace";
+import { getMyGender } from "@/lib/profile/gender";
 import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +11,7 @@ import { getEngagementContext } from "@/lib/notifications/queries";
 
 export default async function SettingsPage() {
   const user = await getCurrentAppUser();
-  const [settings, inviteCode, engagement] = await Promise.all([
+  const [settings, inviteCode, engagement, gender] = await Promise.all([
     user ? getOrCreateUserSettings(user.id) : Promise.resolve(null),
     user?.coupleId && user.role === "owner"
       ? (async () => {
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
         })()
       : Promise.resolve(undefined),
     getEngagementContext(),
+    user ? getMyGender() : Promise.resolve("undisclosed" as const),
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function SettingsPage() {
           channelName={"settings:" + user.id}
           subscriptions={[
             { table: "user_settings", filter: "user_id=eq." + user.id },
+            { table: "profiles", filter: "id=eq." + user.id },
             ...(user.coupleId
               ? [{ table: "couples", filter: "id=eq." + user.coupleId }]
               : []),
@@ -51,6 +54,7 @@ export default async function SettingsPage() {
         </p>
         {user && settings ? (
           <SettingsWorkspace
+            initialGender={gender}
             initialSettings={settings}
             inviteCode={inviteCode ?? undefined}
             coupleId={engagement?.coupleId ?? user.coupleId ?? ""}
