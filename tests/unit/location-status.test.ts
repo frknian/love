@@ -2,19 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import {
   resolveLocationCardStatus,
-  shouldProbeUnknownPermissionOnResume,
   shouldRefreshLocationOnResume,
 } from "@/lib/location/status";
 
 const available = {
   isLoading: false,
+  failure: null,
   permission: "granted" as const,
   sharing: "enabled" as const,
   dataState: "available" as const,
+  hasOwnLocation: true,
   hasOwnCoordinates: true,
   hasPartnerLocation: true,
   partnerSharingEnabled: true,
   hasPartnerCoordinates: true,
+  partnerIsStale: false,
 };
 
 describe("location card status", () => {
@@ -31,6 +33,18 @@ describe("location card status", () => {
 
   it("shows distance when both users have shared coordinates", () => {
     expect(resolveLocationCardStatus(available)).toBe("distance_available");
+  });
+
+  it("shows a permission action before the first location row exists", () => {
+    expect(
+      resolveLocationCardStatus({
+        ...available,
+        permission: "unknown",
+        sharing: "disabled",
+        hasOwnLocation: false,
+        hasOwnCoordinates: false,
+      }),
+    ).toBe("permission_prompt");
   });
 
   it.each([
@@ -74,6 +88,24 @@ describe("location card status", () => {
       }),
     ).toBe("permission_denied");
   });
+
+  it("prioritizes insecure context and unsupported browser", () => {
+    expect(
+      resolveLocationCardStatus({
+        ...available,
+        failure: "insecure_context",
+      }),
+    ).toBe("insecure_context");
+    expect(
+      resolveLocationCardStatus({ ...available, permission: "unsupported" }),
+    ).toBe("unsupported");
+  });
+
+  it("marks a stale partner location before showing a normal distance", () => {
+    expect(
+      resolveLocationCardStatus({ ...available, partnerIsStale: true }),
+    ).toBe("partner_stale");
+  });
 });
 
 describe("location resume refresh", () => {
@@ -97,15 +129,5 @@ describe("location resume refresh", () => {
         nextPermission: "granted",
       }),
     ).toBe(false);
-  });
-
-  it("probes geolocation after resume when Permissions API cannot clear denial", () => {
-    expect(
-      shouldProbeUnknownPermissionOnResume({
-        sharing: "enabled",
-        previousPermission: "denied",
-        nextPermission: "unknown",
-      }),
-    ).toBe(true);
   });
 });

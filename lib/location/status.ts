@@ -1,11 +1,13 @@
 import type {
   LocationDataState,
+  LocationFailure,
   LocationPermissionState,
   LocationSharingState,
 } from "@/types/location";
 
 export type LocationCardStatus =
   | "loading"
+  | "insecure_context"
   | "sharing_disabled"
   | "permission_denied"
   | "permission_prompt"
@@ -16,35 +18,45 @@ export type LocationCardStatus =
   | "own_location_missing"
   | "partner_location_missing"
   | "partner_sharing_disabled"
+  | "partner_stale"
   | "distance_available";
 
 interface LocationCardStatusInput {
   isLoading: boolean;
+  failure: LocationFailure | null;
   permission: LocationPermissionState;
   sharing: LocationSharingState;
+  hasOwnLocation: boolean;
   dataState: LocationDataState;
   hasOwnCoordinates: boolean;
   hasPartnerLocation: boolean;
   partnerSharingEnabled: boolean;
   hasPartnerCoordinates: boolean;
+  partnerIsStale: boolean;
 }
 
 /** Returns one mutually exclusive card state in user-facing priority order. */
 export function resolveLocationCardStatus({
   isLoading,
+  failure,
   permission,
   sharing,
+  hasOwnLocation,
   dataState,
   hasOwnCoordinates,
   hasPartnerLocation,
   partnerSharingEnabled,
   hasPartnerCoordinates,
+  partnerIsStale,
 }: LocationCardStatusInput): LocationCardStatus {
   if (isLoading || dataState === "loading") return "loading";
-  if (sharing === "disabled") return "sharing_disabled";
+  if (failure === "insecure_context") return "insecure_context";
+  if (permission === "unsupported" || failure === "unsupported")
+    return "unsupported";
+  if (hasOwnLocation && sharing === "disabled") return "sharing_disabled";
   if (permission === "denied") return "permission_denied";
-  if (permission === "prompt") return "permission_prompt";
-  if (permission === "unsupported") return "unsupported";
+  if (permission === "prompt" || permission === "unknown")
+    return "permission_prompt";
   if (dataState === "unavailable") return "unavailable";
   if (dataState === "timeout") return "timeout";
   if (dataState === "position_error") return "position_error";
@@ -52,6 +64,7 @@ export function resolveLocationCardStatus({
   if (!hasPartnerLocation) return "partner_location_missing";
   if (!partnerSharingEnabled) return "partner_sharing_disabled";
   if (!hasPartnerCoordinates) return "partner_location_missing";
+  if (partnerIsStale) return "partner_stale";
   return "distance_available";
 }
 
@@ -73,20 +86,5 @@ export function shouldRefreshLocationOnResume({
     sharing === "enabled" &&
     nextPermission === "granted" &&
     (backgroundUpdatesEnabled || previousPermission !== "granted")
-  );
-}
-
-export function shouldProbeUnknownPermissionOnResume({
-  sharing,
-  previousPermission,
-  nextPermission,
-}: Pick<
-  ResumeRefreshInput,
-  "sharing" | "previousPermission" | "nextPermission"
->): boolean {
-  return (
-    sharing === "enabled" &&
-    previousPermission === "denied" &&
-    nextPermission === "unknown"
   );
 }

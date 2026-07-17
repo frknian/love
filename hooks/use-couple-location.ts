@@ -4,13 +4,11 @@ import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { isLocationStale } from "@/lib/location/distance";
-import {
-  shouldProbeUnknownPermissionOnResume,
-  shouldRefreshLocationOnResume,
-} from "@/lib/location/status";
+import { shouldRefreshLocationOnResume } from "@/lib/location/status";
 import { createClient } from "@/lib/supabase/client";
 import {
   deleteCurrentLocation,
+  getLocationAvailabilityFailure,
   getLocationClientPlatform,
   getLocationPermission,
   getLocationRuntime,
@@ -19,6 +17,7 @@ import {
   LocationServiceError,
   observeLocationPermission,
   reconcileLocationPermission,
+  requestAndSaveCurrentLocation,
   updateCurrentLocation,
   updateLocationPreferences,
 } from "@/services/location/location-service";
@@ -76,47 +75,62 @@ export function useCoupleLocation({
     setLoadError(undefined);
   }, [coupleId]);
 
+  const handleLocationFailure = useCallback(
+    async (requestError: unknown) => {
+      const reportedFailure: LocationFailure =
+        requestError instanceof LocationServiceError
+          ? requestError.code
+          : "unknown";
+      const permissionAfter = await getLocationPermission();
+      const nextFailure: LocationFailure =
+        reportedFailure === "permission_denied" && permissionAfter === "granted"
+          ? "position_unavailable"
+          : reportedFailure;
+      setFailure(nextFailure);
+      updatePermission(
+        nextFailure === "permission_denied" ? "denied" : permissionAfter,
+      );
+    },
+    [updatePermission],
+  );
+
+  /** Called directly by a click/switch handler; service starts geolocation synchronously. */
+  const requestLocation = useCallback((): Promise<void> => {
+    setIsUpdating(true);
+    setFailure(null);
+    setLoadError(undefined);
+    const request = requestAndSaveCurrentLocation(
+      currentUserId,
+      coupleId,
+      permissionRef.current,
+    );
+    return request
+      .then(async () => {
+        updatePermission("granted");
+        await load();
+      })
+      .catch(handleLocationFailure)
+      .finally(() => setIsUpdating(false));
+  }, [coupleId, currentUserId, handleLocationFailure, load, updatePermission]);
+
+  /** Background/resume refresh; never opens a permission prompt. */
   const refresh = useCallback(
-    async (force = true) => {
+    async (force = false) => {
+      const currentPermission = await getLocationPermission();
+      updatePermission(currentPermission);
+      if (currentPermission !== "granted") return;
       setIsUpdating(true);
       setFailure(null);
-      setLoadError(undefined);
       try {
-        const currentPermission = await getLocationPermission();
-        updatePermission(currentPermission);
-        if (currentPermission === "denied")
-          throw new LocationServiceError(
-            "permission_denied",
-            locationFailureMessage("permission_denied"),
-          );
-        if (currentPermission === "unsupported")
-          throw new LocationServiceError(
-            "unsupported",
-            locationFailureMessage("unsupported"),
-          );
-
         await updateCurrentLocation(currentUserId, coupleId, force);
         await load();
-        updatePermission("granted");
       } catch (updateError) {
-        const reportedFailure: LocationFailure =
-          updateError instanceof LocationServiceError
-            ? updateError.code
-            : "save_failed";
-        const permissionAfter = await getLocationPermission();
-        const nextFailure: LocationFailure =
-          reportedFailure === "permission_denied" &&
-          permissionAfter === "granted"
-            ? "position_unavailable"
-            : reportedFailure;
-        setFailure(nextFailure);
-        if (nextFailure === "permission_denied") updatePermission("denied");
-        else updatePermission(permissionAfter);
+        await handleLocationFailure(updateError);
       } finally {
         setIsUpdating(false);
       }
     },
-    [coupleId, currentUserId, load, updatePermission],
+    [coupleId, currentUserId, handleLocationFailure, load, updatePermission],
   );
 
   const setPreference = useCallback(
@@ -140,9 +154,6 @@ export function useCoupleLocation({
     [coupleId, currentUserId, load],
   );
 
-  // Sharing is enabled only after a real position is acquired and saved.
-  const enable = useCallback(async () => refresh(true), [refresh]);
-
   const removeLocation = useCallback(async () => {
     try {
       await deleteCurrentLocation(currentUserId);
@@ -155,6 +166,8 @@ export function useCoupleLocation({
   }, [currentUserId, load]);
 
   useEffect(() => {
+    const availabilityFailure = getLocationAvailabilityFailure();
+    if (availabilityFailure) setFailure(availabilityFailure);
     void Promise.all([load(), getLocationPermission()])
       .then(([, permissionState]) => updatePermission(permissionState))
       .catch(() => setLoadError("Konum bilgileri yüklenemedi."))
@@ -211,16 +224,6 @@ export function useCoupleLocation({
   const recheckPermission = useCallback(async () => {
     const previousPermission = permissionRef.current;
     const observedPermission = await getLocationPermission();
-    if (
-      shouldProbeUnknownPermissionOnResume({
-        sharing,
-        previousPermission,
-        nextPermission: observedPermission,
-      })
-    ) {
-      await refresh(false);
-      return;
-    }
     const nextPermission = reconcileLocationPermission(
       previousPermission,
       observedPermission,
@@ -284,7 +287,7 @@ export function useCoupleLocation({
   }, [recheckPermission]);
 
   useEffect(() => {
-    if (sharing === "enabled" && permission !== "denied") void refresh(false);
+    if (sharing === "enabled" && permission === "granted") void refresh(false);
   }, [permission, refresh, sharing]);
 
   const hasOwnCoordinates =
@@ -310,11 +313,12 @@ export function useCoupleLocation({
       permission,
       sharing,
       dataState,
+      failure,
       hasOwnLocation: Boolean(ownLocation),
       hasPartnerLocation: Boolean(partnerLocation),
       updatedAt: ownLocation?.updated_at ?? null,
     });
-  }, [dataState, ownLocation, partnerLocation, permission, sharing]);
+  }, [dataState, failure, ownLocation, partnerLocation, permission, sharing]);
 
   return useMemo(
     () => ({
@@ -323,10 +327,12 @@ export function useCoupleLocation({
       permission,
       sharing,
       dataState,
+      failure,
       isLoading,
       isUpdating,
       error,
-      enable,
+      requestLocation,
+      enable: requestLocation,
       refresh,
       setPreference,
       removeLocation,
@@ -337,10 +343,11 @@ export function useCoupleLocation({
       permission,
       sharing,
       dataState,
+      failure,
       isLoading,
       isUpdating,
       error,
-      enable,
+      requestLocation,
       refresh,
       setPreference,
       removeLocation,

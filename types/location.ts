@@ -29,8 +29,10 @@ export type LocationFailure =
   | "permission_denied"
   | "position_unavailable"
   | "timeout"
+  | "insecure_context"
   | "unsupported"
-  | "save_failed";
+  | "save_failed"
+  | "unknown";
 
 export interface LocationCoordinates {
   latitude: number;

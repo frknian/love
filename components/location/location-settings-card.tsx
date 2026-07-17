@@ -98,7 +98,7 @@ export function LocationSettingsCard({
           disabled={
             !location.ownLocation?.sharing_enabled || location.isUpdating
           }
-          onClick={() => void location.refresh(true)}
+          onClick={() => void location.requestLocation()}
           type="button"
         >
           <RefreshCw

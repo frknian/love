@@ -1,7 +1,10 @@
 "use client";
 
 import { locationConfig } from "@/lib/location/config";
-import { haversineDistanceMeters } from "@/lib/location/distance";
+import {
+  haversineDistanceMeters,
+  isValidCoordinates,
+} from "@/lib/location/distance";
 import { createClient } from "@/lib/supabase/client";
 import type {
   CoupleLocationRow,
@@ -12,12 +15,7 @@ import type {
 let pendingRequest: Promise<CoupleLocationRow> | null = null;
 
 export function getLocationRuntime(): "web" {
-  // This project is a web/PWA build; Android and iOS use the browser permission source.
   return "web";
-}
-
-export function isLocationPermissionsApiSupported(): boolean {
-  return "permissions" in navigator && Boolean(navigator.permissions);
 }
 
 export function getLocationClientPlatform(): CoupleLocationRow["platform"] {
@@ -25,6 +23,26 @@ export function getLocationClientPlatform(): CoupleLocationRow["platform"] {
   if (agent.includes("android")) return "android";
   if (/iphone|ipad|ipod/.test(agent)) return "ios";
   return "web";
+}
+
+export function isSecureLocationContext(): boolean {
+  if (typeof window === "undefined") return false;
+  const hostname = window.location.hostname;
+  return (
+    window.isSecureContext ||
+    hostname === "localhost" ||
+    hostname === "127.0.0.1"
+  );
+}
+
+export function getLocationAvailabilityFailure(): LocationFailure | null {
+  if (!isSecureLocationContext()) return "insecure_context";
+  if (!("geolocation" in navigator)) return "unsupported";
+  return null;
+}
+
+export function isLocationPermissionsApiSupported(): boolean {
+  return "permissions" in navigator && Boolean(navigator.permissions);
 }
 
 export class LocationServiceError extends Error {
@@ -38,8 +56,9 @@ export class LocationServiceError extends Error {
 
 export function mapGeolocationErrorCode(code: number): LocationFailure {
   if (code === 1) return "permission_denied";
+  if (code === 2) return "position_unavailable";
   if (code === 3) return "timeout";
-  return "position_unavailable";
+  return "unknown";
 }
 
 export function classifyGeolocationFailure(
@@ -61,14 +80,18 @@ export function locationFailureMessage(failure: LocationFailure): string {
   switch (failure) {
     case "permission_denied":
       return "Konum izni reddedildi. Tarayıcı veya cihaz ayarlarından izin verebilirsin.";
-    case "timeout":
-      return "Konum alınırken zaman aşımı oluştu. Tekrar deneyebilirsin.";
-    case "unsupported":
-      return "Bu tarayıcı veya cihaz konum paylaşımını desteklemiyor.";
     case "position_unavailable":
       return "Konum şu anda alınamıyor. Cihazının konum servisinin açık olduğundan emin ol.";
+    case "timeout":
+      return "Konum alınırken zaman aşımı oluştu. Tekrar deneyebilirsin.";
+    case "insecure_context":
+      return "Konum özelliğini kullanabilmek için uygulamayı HTTPS üzerinden açmalısın.";
+    case "unsupported":
+      return "Bu tarayıcı konum özelliğini desteklemiyor.";
     case "save_failed":
-      return "Konum güvenli şekilde kaydedilemedi. Lütfen tekrar dene.";
+      return "Konum alındı ancak kaydedilemedi. Tekrar deneyebilirsin.";
+    case "unknown":
+      return "Konum alınamadı. Lütfen tekrar dene.";
   }
 }
 
@@ -76,18 +99,13 @@ export function reconcileLocationPermission(
   previous: LocationPermissionState,
   observed: LocationPermissionState,
 ): LocationPermissionState {
-  // An unavailable Permissions API is not evidence that a successful/failed
-  // geolocation result changed. Preserve the last definitive runtime result.
-  if (
-    observed === "unknown" &&
-    (previous === "granted" || previous === "denied")
-  )
-    return previous;
+  // Unknown is not a denial. Preserve only a position request that succeeded.
+  if (observed === "unknown" && previous === "granted") return "granted";
   return observed;
 }
 
 export async function getLocationPermission(): Promise<LocationPermissionState> {
-  if (!("geolocation" in navigator)) return "unsupported";
+  if (getLocationAvailabilityFailure()) return "unsupported";
   if (!isLocationPermissionsApiSupported()) return "unknown";
   try {
     const status = await navigator.permissions.query({ name: "geolocation" });
@@ -105,8 +123,8 @@ export function observeLocationPermission(
   const handleChange = () => {
     if (!disposed && status) onChange(status.state);
   };
-
-  if (!("geolocation" in navigator)) {
+  const unavailable = getLocationAvailabilityFailure();
+  if (unavailable) {
     onChange("unsupported");
     return () => {
       disposed = true;
@@ -140,32 +158,35 @@ export function observeLocationPermission(
 function acquirePosition(
   permissionBefore: LocationPermissionState,
 ): Promise<GeolocationPosition> {
-  if (!("geolocation" in navigator))
+  const unavailable = getLocationAvailabilityFailure();
+  if (unavailable)
     return Promise.reject(
       new LocationServiceError(
-        "unsupported",
-        "Bu cihaz konum özelliğini desteklemiyor.",
+        unavailable,
+        locationFailureMessage(unavailable),
       ),
     );
+
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       resolve,
-      async (error) => {
-        const permissionAfter = await getLocationPermission();
-        const code = classifyGeolocationFailure(
-          error.code,
-          permissionBefore,
-          permissionAfter,
-        );
-        if (process.env.NODE_ENV === "development")
-          console.debug("[location] geolocation failure", {
-            platform: getLocationClientPlatform(),
-            errorCode: error.code,
-            failure: code,
+      (error) => {
+        void getLocationPermission().then((permissionAfter) => {
+          const code = classifyGeolocationFailure(
+            error.code,
             permissionBefore,
             permissionAfter,
-          });
-        reject(new LocationServiceError(code, error.message));
+          );
+          if (process.env.NODE_ENV === "development")
+            console.debug("[location] geolocation failure", {
+              platform: getLocationClientPlatform(),
+              errorCode: error.code,
+              failure: code,
+              permissionBefore,
+              permissionAfter,
+            });
+          reject(new LocationServiceError(code, locationFailureMessage(code)));
+        });
       },
       {
         enableHighAccuracy: locationConfig.enableHighAccuracy,
@@ -176,89 +197,117 @@ function acquirePosition(
   });
 }
 
+async function readExistingLocation(
+  userId: string,
+): Promise<CoupleLocationRow | null> {
+  const { data, error } = await createClient()
+    .from("couple_locations")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error)
+    throw new LocationServiceError("unknown", "Konum bilgisi okunamadı.");
+  return data as CoupleLocationRow | null;
+}
+
+async function savePosition(
+  userId: string,
+  coupleId: string,
+  position: GeolocationPosition,
+): Promise<CoupleLocationRow> {
+  const coordinates = {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+  };
+  if (!isValidCoordinates(coordinates))
+    throw new LocationServiceError(
+      "unknown",
+      locationFailureMessage("unknown"),
+    );
+
+  const { data, error } = await createClient()
+    .from("couple_locations")
+    .upsert(
+      {
+        user_id: userId,
+        couple_id: coupleId,
+        ...coordinates,
+        accuracy_meters: position.coords.accuracy,
+        sharing_enabled: true,
+        platform: getLocationClientPlatform(),
+        updated_at: new Date(position.timestamp).toISOString(),
+      },
+      { onConflict: "user_id" },
+    )
+    .select("*")
+    .single();
+  if (error) {
+    if (process.env.NODE_ENV === "development")
+      console.error("[location] save failed", { code: error.code });
+    throw new LocationServiceError(
+      "save_failed",
+      locationFailureMessage("save_failed"),
+    );
+  }
+  return data as CoupleLocationRow;
+}
+
+/** Starts getCurrentPosition synchronously from the user's click call stack. */
+export function requestAndSaveCurrentLocation(
+  userId: string,
+  coupleId: string,
+  permissionBefore: LocationPermissionState,
+): Promise<CoupleLocationRow> {
+  if (pendingRequest) return pendingRequest;
+  const positionRequest = acquirePosition(permissionBefore);
+  pendingRequest = positionRequest.then((position) =>
+    savePosition(userId, coupleId, position),
+  );
+  return pendingRequest.finally(() => {
+    pendingRequest = null;
+  });
+}
+
+/** Silent refresh: never prompts and only runs after a confirmed grant. */
 export async function updateCurrentLocation(
   userId: string,
   coupleId: string,
   force = false,
 ): Promise<CoupleLocationRow> {
   if (pendingRequest) return pendingRequest;
-  pendingRequest = (async () => {
-    const permission = await getLocationPermission();
-    if (permission === "denied")
-      throw new LocationServiceError(
-        "permission_denied",
-        locationFailureMessage("permission_denied"),
-      );
-    if (permission === "unsupported")
-      throw new LocationServiceError(
-        "unsupported",
-        locationFailureMessage("unsupported"),
-      );
+  const permission = await getLocationPermission();
+  if (permission !== "granted")
+    throw new LocationServiceError(
+      permission === "denied" ? "permission_denied" : "unknown",
+      permission === "denied"
+        ? locationFailureMessage("permission_denied")
+        : "Sessiz konum güncellemesi için izin doğrulanamadı.",
+    );
 
-    const supabase = createClient();
-    let existing: CoupleLocationRow | null = null;
-    if (!force) {
-      const { data } = await supabase
-        .from("couple_locations")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      existing = data as CoupleLocationRow | null;
-      if (
-        permission === "granted" &&
-        existing?.updated_at &&
-        Date.now() - new Date(existing.updated_at).getTime() <
-          locationConfig.minimumUpdateIntervalMs
-      )
-        return existing;
-    }
+  const existing = force ? null : await readExistingLocation(userId);
+  if (
+    existing?.updated_at &&
+    Date.now() - new Date(existing.updated_at).getTime() <
+      locationConfig.minimumUpdateIntervalMs
+  )
+    return existing;
+
+  pendingRequest = (async () => {
     const position = await acquirePosition(permission);
-    const movement =
-      existing?.latitude !== null &&
-      existing?.longitude !== null &&
-      existing?.latitude !== undefined &&
-      existing?.longitude !== undefined
-        ? haversineDistanceMeters(
-            {
-              latitude: existing.latitude,
-              longitude: existing.longitude,
-            },
-            {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-          )
-        : null;
     if (
       !force &&
-      existing &&
-      movement !== null &&
-      movement < locationConfig.minimumMovementMeters
-    )
-      return existing;
-    const { data, error } = await supabase
-      .from("couple_locations")
-      .upsert(
+      existing?.latitude != null &&
+      existing.longitude != null &&
+      (haversineDistanceMeters(
+        { latitude: existing.latitude, longitude: existing.longitude },
         {
-          user_id: userId,
-          couple_id: coupleId,
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          accuracy_meters: position.coords.accuracy,
-          sharing_enabled: true,
-          platform: getLocationClientPlatform(),
-          updated_at: new Date(position.timestamp).toISOString(),
         },
-        { onConflict: "user_id" },
-      )
-      .select("*")
-      .single();
-    if (error)
-      throw new LocationServiceError(
-        "save_failed",
-        "Konum güvenli şekilde kaydedilemedi.",
-      );
-    return data as CoupleLocationRow;
+      ) ?? Number.POSITIVE_INFINITY) < locationConfig.minimumMovementMeters
+    )
+      return existing;
+    return savePosition(userId, coupleId, position);
   })();
   try {
     return await pendingRequest;

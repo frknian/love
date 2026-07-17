@@ -62,21 +62,18 @@ export function LocationDistanceCard({
 
   const status = resolveLocationCardStatus({
     isLoading: location.isLoading,
+    failure: location.failure,
     permission: location.permission,
     sharing: location.sharing,
     dataState: location.dataState,
+    hasOwnLocation: Boolean(location.ownLocation),
     hasOwnCoordinates,
     hasPartnerLocation: Boolean(location.partnerLocation),
     partnerSharingEnabled: location.partnerLocation?.sharing_enabled ?? false,
     hasPartnerCoordinates,
+    partnerIsStale: isLocationStale(location.partnerLocation?.updated_at),
   });
   const message = locationStatusMessage(status, formattedDistance);
-
-  const lastUpdate = [location.ownLocation, location.partnerLocation]
-    .filter((item) => item?.sharing_enabled)
-    .map((item) => item?.updated_at)
-    .filter((value): value is string => Boolean(value))
-    .sort()[0];
 
   return (
     <Card>
@@ -98,11 +95,17 @@ export function LocationDistanceCard({
           >
             {message}
           </p>
-          {lastUpdate &&
-          location.ownLocation?.share_last_seen !== false &&
-          location.partnerLocation?.share_last_seen !== false ? (
+          {location.ownLocation?.updated_at &&
+          location.ownLocation.share_last_seen !== false ? (
             <p className="mt-1 text-xs text-slate-400">
-              En eski güncelleme {formatRelativeTimeTr(lastUpdate)}
+              Sen: {formatRelativeTimeTr(location.ownLocation.updated_at)}
+            </p>
+          ) : null}
+          {location.partnerLocation?.updated_at &&
+          location.partnerLocation.share_last_seen !== false ? (
+            <p className="text-xs text-slate-400">
+              Partnerin:{" "}
+              {formatRelativeTimeTr(location.partnerLocation.updated_at)}
             </p>
           ) : null}
         </div>
@@ -125,29 +128,29 @@ export function LocationDistanceCard({
         </p>
       ) : null}
       <div className="mt-4 flex gap-2">
-        {location.sharing === "enabled" ? (
-          <button
-            className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-sky-100 px-3 text-xs font-semibold text-sky-700 disabled:opacity-60 dark:bg-sky-500/20 dark:text-sky-300"
-            disabled={location.isUpdating}
-            onClick={() => void location.refresh(true)}
-            type="button"
-          >
-            <RefreshCw
-              className={`size-3.5 ${location.isUpdating ? "animate-spin" : ""}`}
-            />
-            Şimdi güncelle
-          </button>
-        ) : (
-          <button
-            className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 text-xs font-semibold text-white disabled:opacity-60"
-            disabled={location.isUpdating}
-            onClick={() => void location.enable()}
-            type="button"
-          >
+        <button
+          className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold disabled:opacity-60 ${
+            location.sharing === "enabled"
+              ? "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300"
+              : "bg-rose-500 text-white"
+          }`}
+          disabled={location.isUpdating}
+          onClick={() => void location.requestLocation()}
+          type="button"
+        >
+          {location.isUpdating ? (
+            <RefreshCw className="size-3.5 animate-spin" />
+          ) : (
             <LocateFixed className="size-3.5" />
-            Konumu etkinleştir
-          </button>
-        )}
+          )}
+          {location.isUpdating
+            ? "Konum alınıyor…"
+            : status === "permission_prompt"
+              ? "Konum izni ver"
+              : location.sharing === "enabled"
+                ? "Şimdi güncelle"
+                : "Konum paylaşımını aç"}
+        </button>
         <Link
           className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-300"
           href="/ayarlar#konum"
@@ -166,6 +169,8 @@ function locationStatusMessage(
   switch (status) {
     case "loading":
       return "Konum durumu yükleniyor…";
+    case "insecure_context":
+      return "Konum özelliğini kullanabilmek için uygulamayı HTTPS üzerinden açmalısın.";
     case "sharing_disabled":
       return "Konum paylaşımın kapalı.";
     case "permission_denied":
@@ -186,6 +191,10 @@ function locationStatusMessage(
       return "Partnerin henüz konumunu paylaşmadı.";
     case "partner_sharing_disabled":
       return "Partnerinin konum paylaşımı kapalı.";
+    case "partner_stale":
+      return formattedDistance
+        ? `Birbirinize yaklaşık ${formattedDistance} uzaklıktasınız; partner konumu güncel olmayabilir.`
+        : "Partnerinin konumu güncel olmayabilir.";
     case "distance_available":
       return formattedDistance
         ? `Birbirinize ${formattedDistance} uzaklıktasınız`
