@@ -5,10 +5,13 @@ import {
   FileText,
   ImagePlus,
   LoaderCircle,
+  Mic,
   Plus,
+  Square,
   Video,
 } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
@@ -62,6 +65,91 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
   const [error, setError] = useState<string>();
   const [mediaType, setMediaType] = useState<MemoryMediaType>("photo");
   const [fileName, setFileName] = useState("Dosya seçilmedi");
+  const [recordedAudio, setRecordedAudio] = useState<File | null>(null);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    return () => {
+      recorderRef.current?.stop();
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
+    };
+  }, [recordedAudioUrl]);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const timer = window.setInterval(
+      () => setRecordingSeconds((seconds) => seconds + 1),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [isRecording]);
+
+  function clearRecordedAudio() {
+    if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
+    setRecordedAudio(null);
+    setRecordedAudioUrl(null);
+    setRecordingSeconds(0);
+    setFileName("Dosya seçilmedi");
+  }
+
+  async function startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setError("Bu tarayıcıda ses kaydı desteklenmiyor.");
+      return;
+    }
+    setError(undefined);
+    clearRecordedAudio();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
+        (type) => MediaRecorder.isTypeSupported(type),
+      );
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+      recordingStreamRef.current = stream;
+      recorderRef.current = recorder;
+      recordingChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const type = recorder.mimeType || "audio/webm";
+        const extension = type.includes("mp4") ? "mp4" : "webm";
+        const file = new File(
+          [new Blob(recordingChunksRef.current, { type })],
+          `ses-kaydi-${Date.now()}.${extension}`,
+          { type },
+        );
+        const url = URL.createObjectURL(file);
+        setRecordedAudio(file);
+        setRecordedAudioUrl(url);
+        setFileName(file.name);
+        setIsRecording(false);
+        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+        recordingStreamRef.current = null;
+      };
+      recorder.start();
+      setRecordingSeconds(0);
+      setIsRecording(true);
+    } catch {
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+      setError("Mikrofon izni alınamadı. Tarayıcı ayarlarından izin verip tekrar dene.");
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") {
+      recorderRef.current.stop();
+    }
+  }
 
   async function handleAlbumSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,6 +172,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    if (recordedAudio) clearRecordedAudio();
     setFileName(file?.name || "Dosya seçilmedi");
   }
 
@@ -96,14 +185,15 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       setError("Yazılı anı boş bırakılamaz.");
       return;
     }
+    const selectedFile = recordedAudio ?? (file instanceof File ? file : null);
     if (mediaType !== "note") {
-      if (!(file instanceof File) || file.size === 0) {
+      if (!selectedFile || selectedFile.size === 0) {
         setError("Önce bir medya dosyası seçmelisin.");
         return;
       }
       const sizeLimit =
         mediaType === "photo" ? MAX_IMAGE_SIZE_BYTES : MAX_MEDIA_SIZE_BYTES;
-      if (!isSupportedMedia(file, mediaType) || file.size > sizeLimit) {
+      if (!isSupportedMedia(selectedFile, mediaType) || selectedFile.size > sizeLimit) {
         setError(
           mediaType === "photo"
             ? "JPEG, PNG veya WebP formatında ve en fazla 10 MB bir fotoğraf seç."
@@ -117,12 +207,12 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     setIsUploading(true);
     const supabase = createClient();
     let mediaPath: string | null = null;
-    if (file instanceof File && file.size > 0) {
-      mediaPath = createObjectPath(context, file);
+    if (selectedFile && selectedFile.size > 0) {
+      mediaPath = createObjectPath(context, selectedFile);
       const { error: uploadError } = await supabase.storage
         .from("memories")
-        .upload(mediaPath, file, {
-          contentType: file.type,
+        .upload(mediaPath, selectedFile, {
+          contentType: selectedFile.type,
           upsert: false,
         });
       if (uploadError) {
@@ -162,6 +252,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
         .is("cover_image", null);
 
     event.currentTarget.reset();
+    clearRecordedAudio();
     setFileName("Dosya seçilmedi");
     setMediaType("photo");
     setIsUploading(false);
@@ -230,7 +321,9 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
                 }`}
                 key={value}
                 onClick={() => {
+                  stopRecording();
                   setMediaType(value);
+                  clearRecordedAudio();
                   setFileName("Dosya seçilmedi");
                   setError(undefined);
                 }}
@@ -241,7 +334,46 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
               </button>
             ))}
           </div>
-          {mediaType !== "note" ? (
+          {mediaType === "audio" ? (
+            <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-700">
+                    Sesini kaydet
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {isRecording
+                      ? `Kayıt sürüyor · ${Math.floor(recordingSeconds / 60)}:${String(recordingSeconds % 60).padStart(2, "0")}`
+                      : recordedAudio
+                        ? fileName
+                        : "Mikrofonuna dokunarak anını kaydet."}
+                  </p>
+                </div>
+                <button
+                  className="grid size-11 shrink-0 place-items-center rounded-full bg-rose-500 text-white shadow-sm transition hover:bg-rose-600 disabled:opacity-60"
+                  disabled={isUploading}
+                  onClick={() => (isRecording ? stopRecording() : void startRecording())}
+                  type="button"
+                >
+                  {isRecording ? <Square className="size-4" /> : <Mic className="size-5" />}
+                </button>
+              </div>
+              {recordedAudioUrl ? (
+                <audio className="mt-3 w-full" controls src={recordedAudioUrl} />
+              ) : null}
+              <label className="mt-3 inline-flex cursor-pointer text-xs font-semibold text-rose-600" htmlFor="memory-audio-file">
+                Dosyadan ses seç
+              </label>
+              <input
+                accept={mediaAccept.audio}
+                className="sr-only"
+                id="memory-audio-file"
+                name="media"
+                onChange={handleFileChange}
+                type="file"
+              />
+            </div>
+          ) : mediaType !== "note" ? (
             <>
               <input
                 accept={mediaAccept[mediaType]}
