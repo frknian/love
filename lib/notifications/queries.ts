@@ -21,10 +21,12 @@ import type {
  */
 export const getEngagementContext = cache(
   async function getEngagementContext(): Promise<EngagementContext | null> {
-    const user = await getAuthUser();
+    const [user, members] = await Promise.all([
+      getAuthUser(),
+      getCoupleMembers(),
+    ]);
     if (!user) return null;
 
-    const members = await getCoupleMembers();
     const me = members.find((member) => member.id === user.id);
     if (!me) return null;
     const partner = members.find((member) => member.id !== user.id) ?? null;

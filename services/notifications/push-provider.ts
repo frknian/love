@@ -60,7 +60,7 @@ function getAvailability(): PushAvailability {
 class BrowserPushProvider implements PushProvider {
   readonly name = "standards-web-push";
   private registrationPromise?: Promise<ServiceWorkerRegistration>;
-  private publicKeyPromise?: Promise<string>;
+  private publicKeyPromise?: Promise<string | null>;
 
   isSupported(): boolean {
     return getAvailability() === "supported";
@@ -72,12 +72,13 @@ class BrowserPushProvider implements PushProvider {
     this.publicKeyPromise ??= fetch("/api/push/config", {
       cache: "no-store",
       credentials: "same-origin",
-    }).then(async (response) => {
-      if (!response.ok) throw new Error("Push configuration is unavailable.");
-      const payload = (await response.json()) as { publicKey?: string };
-      if (!payload.publicKey) throw new Error("Push public key is missing.");
-      return payload.publicKey;
-    });
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload = (await response.json()) as { publicKey?: string };
+        return payload.publicKey ?? null;
+      })
+      .catch(() => null);
   }
 
   async getState(): Promise<PushClientState> {
@@ -89,6 +90,16 @@ class BrowserPushProvider implements PushProvider {
           typeof Notification === "undefined"
             ? "unsupported"
             : Notification.permission,
+        subscribed: false,
+      };
+    }
+
+    this.prepare();
+    const configured = await this.publicKeyPromise;
+    if (!configured) {
+      return {
+        availability: "unsupported",
+        permission: Notification.permission,
         subscribed: false,
       };
     }
@@ -120,6 +131,7 @@ class BrowserPushProvider implements PushProvider {
       this.registrationPromise!,
       this.publicKeyPromise!,
     ]);
+    if (!publicKey) throw new Error("Push configuration is unavailable.");
     let subscription = await registration.pushManager.getSubscription();
     subscription ??= await registration.pushManager.subscribe({
       userVisibleOnly: true,

@@ -8,14 +8,20 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-import {
-  MoreMenuSheet,
-  useMoreMenu,
-} from "@/components/navigation/more-menu-sheet";
 import { cn } from "@/lib/utils";
 import type { NavigationItem } from "@/types/navigation";
+
+const MoreMenuSheet = dynamic(
+  () =>
+    import("@/components/navigation/more-menu-sheet").then(
+      (module) => module.MoreMenuSheet,
+    ),
+  { ssr: false },
+);
 
 const navigationItems: NavigationItem[] = [
   { href: "/", label: "Ana Sayfa", icon: House },
@@ -26,7 +32,7 @@ const navigationItems: NavigationItem[] = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
-  const moreMenu = useMoreMenu();
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   return (
     <>
@@ -60,14 +66,19 @@ export function BottomNavigation() {
         <button
           aria-label="Diğer modüller"
           className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-medium text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
-          onClick={moreMenu.open}
+          onClick={() => setIsMoreMenuOpen(true)}
           type="button"
         >
           <MoreHorizontal aria-hidden="true" className="size-[19px]" />
           <span className="truncate">Diğer</span>
         </button>
       </nav>
-      <MoreMenuSheet isOpen={moreMenu.isOpen} onClose={moreMenu.close} />
+      {isMoreMenuOpen ? (
+        <MoreMenuSheet
+          isOpen={isMoreMenuOpen}
+          onClose={() => setIsMoreMenuOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

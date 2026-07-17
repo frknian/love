@@ -3,14 +3,11 @@ import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-import { AuthProvider } from "@/components/auth/auth-provider";
 import { OfflineSyncProvider } from "@/components/providers/offline-sync-provider";
 import { ServiceWorkerProvider } from "@/components/providers/service-worker-provider";
 import { ThemeProvider } from "@/components/settings/theme-provider";
 import { ToastProvider } from "@/components/ui/toast-provider";
-import { getOrCreateUserSettings } from "@/lib/settings/queries";
-import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
-import type { ThemeOption } from "@/types/settings";
+import { THEME_STORAGE_KEY } from "@/lib/settings/theme";
 
 import "./globals.css";
 
@@ -40,36 +37,28 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-function noFlashThemeScript(initialTheme: ThemeOption) {
-  return `(function(){try{var theme=${JSON.stringify(initialTheme)};var resolved=theme==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):theme;document.documentElement.classList.toggle('dark',resolved==='dark');document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
+function noFlashThemeScript() {
+  return `(function(){try{var stored=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});var theme=stored==='light'||stored==='dark'||stored==='system'?stored:'system';var resolved=theme==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):theme;document.documentElement.classList.toggle('dark',resolved==='dark');document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const user = await getCurrentAppUser();
-  const settings = user ? await getOrCreateUserSettings(user.id) : null;
-  const initialTheme: ThemeOption = settings?.theme ?? "system";
-
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{ __html: noFlashThemeScript(initialTheme) }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: noFlashThemeScript() }} />
       </head>
       <body>
-        <AuthProvider>
-          <ThemeProvider initialTheme={initialTheme} userId={user?.id ?? null}>
-            <ToastProvider>
-              <ServiceWorkerProvider />
-              <OfflineSyncProvider />
-              {children}
-              <Analytics />
-              <SpeedInsights />
-            </ToastProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider initialTheme="system">
+          <ToastProvider>
+            <ServiceWorkerProvider />
+            <OfflineSyncProvider />
+            {children}
+            <Analytics />
+            <SpeedInsights />
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

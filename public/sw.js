@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const SHELL_CACHE = `our-space-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `our-space-runtime-${CACHE_VERSION}`;
 const IMAGE_CACHE = `our-space-images-${CACHE_VERSION}`;

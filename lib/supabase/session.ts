@@ -36,15 +36,13 @@ export const getAuthUser = cache(async function getAuthUser() {
  * ve benzeri yardımcılar aynı sonucu paylaşır.
  */
 export const getCoupleMembers = cache(async function getCoupleMembers() {
-  const user = await getAuthUser();
-  if (!user) return [] as CoupleMemberRow[];
-
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select(
       "id, couple_id, display_name, avatar_url, role, couples(anniversary_date)",
     );
+  if (error) return [] as CoupleMemberRow[];
   return (data as CoupleMemberRow[] | null) ?? [];
 });
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, XCircle } from "lucide-react";
 import {
   createContext,
@@ -53,30 +52,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4"
         role="status"
       >
-        <AnimatePresence initial={false}>
-          {toasts.map((toast) => (
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className={`pointer-events-auto flex max-w-sm items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-xl ${
-                toast.variant === "success"
-                  ? "bg-emerald-500/95 text-white"
-                  : "bg-rose-500/95 text-white"
-              }`}
-              exit={{ opacity: 0, y: -12 }}
-              initial={{ opacity: 0, y: -12 }}
-              key={toast.id}
-              onClick={() => dismiss(toast.id)}
-              transition={{ type: "spring", damping: 24, stiffness: 300 }}
-            >
-              {toast.variant === "success" ? (
-                <CheckCircle2 className="size-4 shrink-0" />
-              ) : (
-                <XCircle className="size-4 shrink-0" />
-              )}
-              <span className="truncate">{toast.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {toasts.map((toast) => (
+          <button
+            className={`pointer-events-auto flex max-w-sm items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-xl ${
+              toast.variant === "success"
+                ? "bg-emerald-500/95 text-white"
+                : "bg-rose-500/95 text-white"
+            } animate-toast-in`}
+            key={toast.id}
+            onClick={() => dismiss(toast.id)}
+            type="button"
+          >
+            {toast.variant === "success" ? (
+              <CheckCircle2 className="size-4 shrink-0" />
+            ) : (
+              <XCircle className="size-4 shrink-0" />
+            )}
+            <span className="truncate">{toast.message}</span>
+          </button>
+        ))}
       </div>
     </ToastContext.Provider>
   );

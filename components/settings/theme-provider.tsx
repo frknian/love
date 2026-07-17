@@ -17,8 +17,15 @@ import {
   THEME_STORAGE_KEY,
   type ResolvedTheme,
 } from "@/lib/settings/theme";
-import { settingsService } from "@/services/settings/settings-service";
 import type { ThemeOption } from "@/types/settings";
+
+function getInitialTheme(fallback: ThemeOption): ThemeOption {
+  if (typeof window === "undefined") return fallback;
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+  return stored === "light" || stored === "dark" || stored === "system"
+    ? stored
+    : fallback;
+}
 
 interface ThemeContextValue {
   theme: ThemeOption;
@@ -31,17 +38,14 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 interface ThemeProviderProps {
   children: ReactNode;
   initialTheme: ThemeOption;
-  userId: string | null;
 }
 
-export function ThemeProvider({
-  children,
-  initialTheme,
-  userId,
-}: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<ThemeOption>(initialTheme);
+export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<ThemeOption>(() =>
+    getInitialTheme(initialTheme),
+  );
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>
-    resolveTheme(initialTheme),
+    resolveTheme(getInitialTheme(initialTheme)),
   );
 
   useEffect(() => {
@@ -62,18 +66,10 @@ export function ThemeProvider({
     return () => media.removeEventListener("change", handleChange);
   }, [theme]);
 
-  const setTheme = useCallback(
-    (next: ThemeOption) => {
-      setThemeState(next);
-      window.localStorage.setItem(THEME_STORAGE_KEY, next);
-      if (userId) {
-        void settingsService
-          .update(userId, { theme: next })
-          .catch(() => undefined);
-      }
-    },
-    [userId],
-  );
+  const setTheme = useCallback((next: ThemeOption) => {
+    setThemeState(next);
+    window.localStorage.setItem(THEME_STORAGE_KEY, next);
+  }, []);
 
   const value = useMemo(
     () => ({ theme, resolvedTheme, setTheme }),

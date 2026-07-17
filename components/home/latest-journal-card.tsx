@@ -4,10 +4,10 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { formatRelativeTimeTr } from "@/lib/date-utils";
 import { getMoodDefinition } from "@/lib/journal/journal-catalog";
-import type { JournalEntry } from "@/types/journal";
+import type { LatestJournalSummary } from "@/lib/journal/queries";
 
 interface LatestJournalCardProps {
-  entry: JournalEntry | null;
+  entry: LatestJournalSummary | null;
 }
 
 export function LatestJournalCard({ entry }: LatestJournalCardProps) {

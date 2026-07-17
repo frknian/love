@@ -1,16 +1,39 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/layout/app-header";
+import {
+  DeferredNotificationPermission,
+  DeferredRealtimeNotifications,
+} from "@/components/layout/deferred-page-runtime";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
-import { RealtimeNotificationListener } from "@/components/notifications/realtime-notification-listener";
-import { NotificationPermissionCard } from "@/components/notifications/notification-permission-card";
 import { getEngagementContext } from "@/lib/notifications/queries";
 import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
+import type { UserSettings } from "@/types/settings";
+import type { EngagementContext } from "@/types/notifications";
 
 interface PageShellProps {
   children: ReactNode;
+}
+
+async function NotificationRuntime({
+  engagement,
+  settingsPromise,
+}: {
+  engagement: EngagementContext;
+  settingsPromise: Promise<UserSettings>;
+}) {
+  const settings = await settingsPromise;
+  return (
+    <DeferredRealtimeNotifications
+      engagement={engagement}
+      hapticsEnabled={settings.hapticsEnabled}
+      notificationPreferences={settings.notificationPreferences}
+      notificationsEnabled={settings.notificationsEnabled}
+      theme={settings.theme}
+    />
+  );
 }
 
 export async function PageShell({ children }: PageShellProps) {
@@ -26,23 +49,22 @@ export async function PageShell({ children }: PageShellProps) {
     redirect("/onboarding");
   }
 
-  const settings = await getOrCreateUserSettings(user.id);
+  // Ayarlar, ilk HTML ve sayfa içeriğini engellememesi için arka planda akar.
+  const settingsPromise = getOrCreateUserSettings(user.id);
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-4 pb-28 pt-6 sm:px-6 sm:pt-10">
       <AppHeader currentUserId={engagement?.userId} user={user} />
       {children}
       <BottomNavigation />
-      <NotificationPermissionCard />
+      <DeferredNotificationPermission />
       {engagement ? (
-        <RealtimeNotificationListener
-          coupleId={engagement.coupleId}
-          currentUserId={engagement.userId}
-          hapticsEnabled={settings.hapticsEnabled}
-          notificationPreferences={settings.notificationPreferences}
-          notificationsEnabled={settings.notificationsEnabled}
-          partnerName={engagement.partnerName ?? "Partner"}
-        />
+        <Suspense fallback={null}>
+          <NotificationRuntime
+            engagement={engagement}
+            settingsPromise={settingsPromise}
+          />
+        </Suspense>
       ) : null}
     </main>
   );

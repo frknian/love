@@ -12,10 +12,12 @@ import type { AppUser } from "@/types/auth";
  */
 export const getCurrentAppUser = cache(
   async function getCurrentAppUser(): Promise<AppUser | null> {
-    const user = await getAuthUser();
+    const [user, members] = await Promise.all([
+      getAuthUser(),
+      getCoupleMembers(),
+    ]);
     if (!user?.email) return null;
 
-    const members = await getCoupleMembers();
     const me = members.find((member) => member.id === user.id);
 
     return {

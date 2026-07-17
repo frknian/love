@@ -30,6 +30,17 @@ export function ServiceWorkerProvider() {
   );
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV !== "production") {
+      // Geliştirme chunk adları sabit kaldığı için eski Service Worker kodu
+      // cache'ten sunup HMR sonucunu gölgeleyebilir. Dev ortamında kayıtları
+      // temizleyerek her doğrulamanın güncel bundle ile yapılmasını sağla.
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) =>
+          Promise.all(registrations.map((item) => item.unregister())),
+        );
+      return;
+    }
     let registration: ServiceWorkerRegistration | undefined;
     const register = async () => {
       registration = await navigator.serviceWorker.register("/sw.js", {

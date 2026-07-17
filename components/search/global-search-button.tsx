@@ -1,9 +1,16 @@
 "use client";
 
 import { Search } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { GlobalSearchDialog } from "@/components/search/global-search-dialog";
+const GlobalSearchDialog = dynamic(
+  () =>
+    import("@/components/search/global-search-dialog").then(
+      (module) => module.GlobalSearchDialog,
+    ),
+  { ssr: false },
+);
 
 export function GlobalSearchButton() {
   const [isOpen, setIsOpen] = useState(false);
