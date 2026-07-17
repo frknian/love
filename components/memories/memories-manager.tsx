@@ -17,8 +17,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Album, MemoriesContext } from "@/types/memories";
 
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_MEDIA_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_MEDIA_SIZE_BYTES = 1024 * 1024 * 1024;
 const ACCEPTED_MEDIA_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -221,13 +220,14 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
         setError("Önce bir medya dosyası seçmelisin.");
         return;
       }
-      const sizeLimit =
-        mediaType === "photo" ? MAX_IMAGE_SIZE_BYTES : MAX_MEDIA_SIZE_BYTES;
-      if (!isSupportedMedia(selectedFile, mediaType) || selectedFile.size > sizeLimit) {
+      if (
+        !isSupportedMedia(selectedFile, mediaType) ||
+        selectedFile.size > MAX_MEDIA_SIZE_BYTES
+      ) {
         setError(
           mediaType === "photo"
-            ? "JPEG, PNG veya WebP formatında ve en fazla 10 MB bir fotoğraf seç."
-            : "Desteklenen formatta ve en fazla 50 MB bir medya dosyası seç.",
+            ? "JPEG, PNG veya WebP formatında ve en fazla 1 GB bir fotoğraf seç."
+            : "Desteklenen formatta ve en fazla 1 GB bir medya dosyası seç.",
         );
         return;
       }
