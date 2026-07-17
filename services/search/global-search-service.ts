@@ -7,7 +7,7 @@ const groupLabels: Record<SearchResultGroup["category"], string> = {
   memories: "Anılar",
   notes: "Notlar",
   journals: "Günlük",
-  bucket: "Bucket List",
+  bucket: "Yapmak İstediklerimiz",
   events: "Etkinlikler",
 };
 

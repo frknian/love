@@ -7,7 +7,7 @@ export default function BucketListError({ reset }: { reset: () => void }) {
     <RouteErrorState
       description="Bağlantını kontrol edip tekrar deneyebilirsin."
       retry={reset}
-      title="Bucket list şu anda yüklenemedi."
+      title="Yapmak İstediklerimiz şu anda yüklenemedi."
     />
   );
 }

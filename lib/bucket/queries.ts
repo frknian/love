@@ -19,7 +19,7 @@ export async function getBucketLists(): Promise<BucketList[]> {
       "id, couple_id, title, description, cover_image, color, created_by, created_at",
     )
     .order("created_at", { ascending: false });
-  if (error) throw new Error("Bucket list'ler yüklenemedi.");
+  if (error) throw new Error("Yapmak istedikleriniz yüklenemedi.");
   return ((data ?? []) as BucketListRow[]).map(toBucketList);
 }
 

@@ -24,6 +24,12 @@ const labels: Record<NotificationPreferenceKey, string> = {
   new_journal: "📓 Yeni Günlük",
   upcoming_event: "📅 Yaklaşan Etkinlik",
   capsule_opened: "⏳ Time Capsule Açıldı",
+  mood_changed: "🙂 Partner Modu",
+  partner_call: "❤️ Partner Beni Çağırdı",
+  hunger_alert: "🍕 Açlık Alarmı",
+  plan_request: "🎬 Plan Önerisi",
+  plan_response: "✅ Plan Yanıtı",
+  highlight_memory: "⭕ Öne Çıkan Anı",
 };
 
 export function NotificationPreferencesCard({

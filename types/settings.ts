@@ -16,6 +16,12 @@ export const notificationPreferenceKeys = [
   "new_journal",
   "upcoming_event",
   "capsule_opened",
+  "mood_changed",
+  "partner_call",
+  "hunger_alert",
+  "plan_request",
+  "plan_response",
+  "highlight_memory",
 ] as const;
 
 export type NotificationPreferenceKey =
@@ -61,6 +67,12 @@ export const defaultNotificationPreferences: NotificationPreferences = {
   new_journal: true,
   upcoming_event: true,
   capsule_opened: true,
+  mood_changed: true,
+  partner_call: true,
+  hunger_alert: true,
+  plan_request: true,
+  plan_response: true,
+  highlight_memory: true,
 };
 
 export const defaultUserSettings: Omit<

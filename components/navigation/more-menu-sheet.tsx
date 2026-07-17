@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 const moreLinks = [
   { href: "/notlar", label: "Notlar", icon: NotebookPen },
   { href: "/gunluk", label: "Ortak Günlük", icon: BookHeart },
-  { href: "/bucket-list", label: "Bucket List", icon: Target },
+  { href: "/bucket-list", label: "Yapmak İstediklerimiz", icon: Target },
   { href: "/zaman-kapsulu", label: "Zaman Kapsülü", icon: Hourglass },
   { href: "/geri-sayimlar", label: "Geri Sayımlar", icon: Sparkles },
   { href: "/bildirimler", label: "Bildirimler", icon: BellRing },

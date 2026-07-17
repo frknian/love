@@ -1,6 +1,15 @@
 "use client";
 
-import { CalendarDays, LoaderCircle, MapPin, Pencil, X } from "lucide-react";
+import {
+  CalendarDays,
+  FileAudio,
+  FileText,
+  LoaderCircle,
+  MapPin,
+  Pencil,
+  Video,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
@@ -44,25 +53,66 @@ export function MemoryCard({ memory }: { memory: Memory }) {
   return (
     <>
       <Card className="overflow-hidden p-0">
-        <button
-          aria-label={`${memory.title} anısını düzenle`}
-          className="group relative block aspect-[4/3] w-full cursor-pointer bg-rose-50 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-rose-500"
-          onClick={() => setIsEditing(true)}
-          type="button"
-        >
-          {memory.imageUrl ? (
-            <Image
-              alt={memory.title}
-              className="object-cover"
-              fill
-              sizes="(max-width: 640px) 100vw, 24rem"
+        <div className="group relative aspect-[4/3] w-full overflow-hidden bg-rose-50">
+          {memory.mediaType === "photo" && memory.imageUrl ? (
+            <button
+              aria-label={`${memory.title} anısını düzenle`}
+              className="relative block size-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-rose-500"
+              onClick={() => setIsEditing(true)}
+              type="button"
+            >
+              <Image
+                alt={memory.title}
+                className="object-cover"
+                fill
+                sizes="(max-width: 640px) 100vw, 24rem"
+                src={memory.imageUrl}
+              />
+            </button>
+          ) : memory.mediaType === "video" && memory.imageUrl ? (
+            <video
+              className="size-full bg-slate-950 object-contain"
+              controls
+              preload="metadata"
               src={memory.imageUrl}
-            />
+            >
+              Tarayıcınız video oynatmayı desteklemiyor.
+            </video>
+          ) : memory.mediaType === "audio" && memory.imageUrl ? (
+            <div className="grid size-full place-items-center p-5 text-center">
+              <FileAudio className="size-12 text-rose-400" />
+              <audio
+                className="mt-3 w-full"
+                controls
+                preload="metadata"
+                src={memory.imageUrl}
+              >
+                Tarayıcınız ses oynatmayı desteklemiyor.
+              </audio>
+            </div>
+          ) : memory.mediaType === "note" ? (
+            <div className="flex size-full flex-col justify-center p-6">
+              <FileText className="mb-3 size-8 text-rose-400" />
+              <p className="line-clamp-6 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                {memory.noteContent}
+              </p>
+            </div>
+          ) : (
+            <div className="grid size-full place-items-center text-slate-400">
+              <Video className="size-10" />
+            </div>
+          )}
+          {memory.mediaType !== "photo" ? (
+            <button
+              aria-label={`${memory.title} anısını düzenle`}
+              className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-slate-900/55 text-white opacity-90 shadow-sm transition hover:bg-slate-900"
+              onClick={() => setIsEditing(true)}
+              type="button"
+            >
+              <Pencil className="size-4" />
+            </button>
           ) : null}
-          <span className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-1 items-center justify-center gap-1 bg-slate-900/55 px-3 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
-            <Pencil className="size-3.5" /> Düzenle
-          </span>
-        </button>
+        </div>
         <div className="p-4">
           <h2 className="font-semibold text-slate-800">{memory.title}</h2>
           {memory.description ? (

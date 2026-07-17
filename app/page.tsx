@@ -12,6 +12,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { InteractionPicker } from "@/components/notifications/interaction-picker";
 import { InteractionUnavailableCard } from "@/components/notifications/interaction-unavailable-card";
 import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
+import { MoodStatusCard } from "@/components/social/mood-status-card";
 import { getBucketItems, getBucketLists } from "@/lib/bucket/queries";
 import { withProgress } from "@/lib/bucket/bucket-mapper";
 import { getNextLockedCapsule } from "@/lib/capsule/queries";
@@ -109,6 +110,15 @@ export default async function HomePage() {
             coupleId={context.coupleId}
             currentUserId={context.userId}
             partnerId={context.partnerId}
+          />
+        ) : null}
+        {context?.partnerId ? (
+          <MoodStatusCard
+            coupleId={context.coupleId}
+            currentUserId={context.userId}
+            currentUserName={context.displayName}
+            partnerId={context.partnerId}
+            partnerName={context.partnerName ?? "Partnerin"}
           />
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">

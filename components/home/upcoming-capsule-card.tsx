@@ -17,7 +17,7 @@ export function UpcomingCapsuleCard({ capsule }: UpcomingCapsuleCardProps) {
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">Yaklaşan Time Capsule</p>
+        <p className="text-sm text-slate-500">Time Capsule</p>
         <Hourglass aria-hidden="true" className="size-4 text-rose-300" />
       </div>
       {capsule && daysUntil !== null ? (

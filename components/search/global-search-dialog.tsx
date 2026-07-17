@@ -80,7 +80,7 @@ export function GlobalSearchDialog({ onClose }: GlobalSearchDialogProps) {
               className="size-4 shrink-0 text-slate-400"
             />
             <input
-              aria-label="Anılar, notlar, günlük, bucket list ve etkinliklerde ara"
+              aria-label="Anılar, notlar, günlük, yapmak istediklerimiz ve etkinliklerde ara"
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:text-slate-100"
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Anılar, notlar, günlük, etkinlikler..."
