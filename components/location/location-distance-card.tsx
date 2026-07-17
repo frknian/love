@@ -10,6 +10,10 @@ import {
   haversineDistanceMeters,
   isLocationStale,
 } from "@/lib/location/distance";
+import {
+  resolveLocationCardStatus,
+  type LocationCardStatus,
+} from "@/lib/location/status";
 import { formatRelativeTimeTr } from "@/lib/date-utils";
 
 interface LocationDistanceCardProps {
@@ -28,9 +32,17 @@ export function LocationDistanceCard({
     currentUserId,
     partnerId,
   });
+  const hasOwnCoordinates =
+    location.ownLocation?.latitude != null &&
+    location.ownLocation.longitude != null;
+  const hasPartnerCoordinates =
+    location.partnerLocation?.latitude != null &&
+    location.partnerLocation.longitude != null;
   const bothEnabled =
     location.ownLocation?.sharing_enabled &&
-    location.partnerLocation?.sharing_enabled;
+    location.partnerLocation?.sharing_enabled &&
+    hasOwnCoordinates &&
+    hasPartnerCoordinates;
   const distance = bothEnabled
     ? haversineDistanceMeters(
         {
@@ -48,18 +60,17 @@ export function LocationDistanceCard({
     isLocationStale(location.ownLocation?.updated_at) ||
     isLocationStale(location.partnerLocation?.updated_at);
 
-  let message = "Mesafeyi görebilmek için konum paylaşımını aç.";
-  if (location.isLoading) message = "Konum durumu yükleniyor…";
-  else if (location.ownLocation?.sharing_enabled && !location.partnerLocation)
-    message = "Partnerin henüz konumunu paylaşmadı.";
-  else if (
-    location.ownLocation?.sharing_enabled &&
-    location.partnerLocation &&
-    !location.partnerLocation.sharing_enabled
-  )
-    message = "Partnerinin konum paylaşımı kapalı.";
-  else if (formattedDistance)
-    message = `Birbirinize ${formattedDistance} uzaklıktasınız`;
+  const status = resolveLocationCardStatus({
+    isLoading: location.isLoading,
+    permission: location.permission,
+    sharing: location.sharing,
+    dataState: location.dataState,
+    hasOwnCoordinates,
+    hasPartnerLocation: Boolean(location.partnerLocation),
+    partnerSharingEnabled: location.partnerLocation?.sharing_enabled ?? false,
+    hasPartnerCoordinates,
+  });
+  const message = locationStatusMessage(status, formattedDistance);
 
   const lastUpdate = [location.ownLocation, location.partnerLocation]
     .filter((item) => item?.sharing_enabled)
@@ -77,7 +88,14 @@ export function LocationDistanceCard({
           <p className="text-xs font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">
             Aranızdaki mesafe
           </p>
-          <p className="mt-1 text-sm font-semibold leading-5 text-slate-700 dark:text-slate-100">
+          <p
+            aria-live="polite"
+            className={`mt-1 text-sm font-semibold leading-5 ${
+              status === "permission_denied"
+                ? "text-rose-600 dark:text-rose-300"
+                : "text-slate-700 dark:text-slate-100"
+            }`}
+          >
             {message}
           </p>
           {lastUpdate &&
@@ -106,13 +124,8 @@ export function LocationDistanceCard({
           Konum bilgisi güncel olmayabilir.
         </p>
       ) : null}
-      {location.error ? (
-        <p className="mt-3 text-xs text-rose-600" role="alert">
-          {location.error}
-        </p>
-      ) : null}
       <div className="mt-4 flex gap-2">
-        {location.ownLocation?.sharing_enabled ? (
+        {location.sharing === "enabled" ? (
           <button
             className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-sky-100 px-3 text-xs font-semibold text-sky-700 disabled:opacity-60 dark:bg-sky-500/20 dark:text-sky-300"
             disabled={location.isUpdating}
@@ -144,4 +157,38 @@ export function LocationDistanceCard({
       </div>
     </Card>
   );
+}
+
+function locationStatusMessage(
+  status: LocationCardStatus,
+  formattedDistance: string | null,
+): string {
+  switch (status) {
+    case "loading":
+      return "Konum durumu yükleniyor…";
+    case "sharing_disabled":
+      return "Konum paylaşımın kapalı.";
+    case "permission_denied":
+      return "Konum izni reddedildi. Tarayıcı veya cihaz ayarlarından izin verebilirsin.";
+    case "permission_prompt":
+      return "Mesafeyi görebilmek için konum izni vermen gerekiyor.";
+    case "unsupported":
+      return "Bu tarayıcı veya cihaz konum paylaşımını desteklemiyor.";
+    case "unavailable":
+      return "Konum şu anda alınamıyor. Cihazının konum servisinin açık olduğundan emin ol.";
+    case "timeout":
+      return "Konum alınırken zaman aşımı oluştu. Tekrar deneyebilirsin.";
+    case "position_error":
+      return "Konum güncellenemedi. Lütfen tekrar dene.";
+    case "own_location_missing":
+      return "Mesafeyi hesaplamak için konumunu güncelle.";
+    case "partner_location_missing":
+      return "Partnerin henüz konumunu paylaşmadı.";
+    case "partner_sharing_disabled":
+      return "Partnerinin konum paylaşımı kapalı.";
+    case "distance_available":
+      return formattedDistance
+        ? `Birbirinize ${formattedDistance} uzaklıktasınız`
+        : "Mesafe hesaplanamadı. Konumları yeniden güncellemeyi dene.";
+  }
 }

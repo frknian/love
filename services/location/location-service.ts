@@ -11,7 +11,16 @@ import type {
 
 let pendingRequest: Promise<CoupleLocationRow> | null = null;
 
-function platform(): CoupleLocationRow["platform"] {
+export function getLocationRuntime(): "web" {
+  // This project is a web/PWA build; Android and iOS use the browser permission source.
+  return "web";
+}
+
+export function isLocationPermissionsApiSupported(): boolean {
+  return "permissions" in navigator && Boolean(navigator.permissions);
+}
+
+export function getLocationClientPlatform(): CoupleLocationRow["platform"] {
   const agent = navigator.userAgent.toLowerCase();
   if (agent.includes("android")) return "android";
   if (/iphone|ipad|ipod/.test(agent)) return "ios";
@@ -27,15 +36,90 @@ export class LocationServiceError extends Error {
   }
 }
 
+export function mapGeolocationErrorCode(code: number): LocationFailure {
+  if (code === 1) return "permission_denied";
+  if (code === 3) return "timeout";
+  return "position_unavailable";
+}
+
+export function locationFailureMessage(failure: LocationFailure): string {
+  switch (failure) {
+    case "permission_denied":
+      return "Konum izni reddedildi. Tarayıcı veya cihaz ayarlarından izin verebilirsin.";
+    case "timeout":
+      return "Konum alınırken zaman aşımı oluştu. Tekrar deneyebilirsin.";
+    case "unsupported":
+      return "Bu tarayıcı veya cihaz konum paylaşımını desteklemiyor.";
+    case "position_unavailable":
+      return "Konum şu anda alınamıyor. Cihazının konum servisinin açık olduğundan emin ol.";
+    case "save_failed":
+      return "Konum güvenli şekilde kaydedilemedi. Lütfen tekrar dene.";
+  }
+}
+
+export function reconcileLocationPermission(
+  previous: LocationPermissionState,
+  observed: LocationPermissionState,
+): LocationPermissionState {
+  // An unavailable Permissions API is not evidence that a successful/failed
+  // geolocation result changed. Preserve the last definitive runtime result.
+  if (
+    observed === "unknown" &&
+    (previous === "granted" || previous === "denied")
+  )
+    return previous;
+  return observed;
+}
+
 export async function getLocationPermission(): Promise<LocationPermissionState> {
   if (!("geolocation" in navigator)) return "unsupported";
-  if (!navigator.permissions) return "unknown";
+  if (!isLocationPermissionsApiSupported()) return "unknown";
   try {
     const status = await navigator.permissions.query({ name: "geolocation" });
     return status.state;
   } catch {
     return "unknown";
   }
+}
+
+export function observeLocationPermission(
+  onChange: (permission: LocationPermissionState) => void,
+): () => void {
+  let disposed = false;
+  let status: PermissionStatus | null = null;
+  const handleChange = () => {
+    if (!disposed && status) onChange(status.state);
+  };
+
+  if (!("geolocation" in navigator)) {
+    onChange("unsupported");
+    return () => {
+      disposed = true;
+    };
+  }
+  if (!isLocationPermissionsApiSupported()) {
+    onChange("unknown");
+    return () => {
+      disposed = true;
+    };
+  }
+
+  void navigator.permissions
+    .query({ name: "geolocation" })
+    .then((permissionStatus) => {
+      if (disposed) return;
+      status = permissionStatus;
+      onChange(status.state);
+      status.addEventListener("change", handleChange);
+    })
+    .catch(() => {
+      if (!disposed) onChange("unknown");
+    });
+
+  return () => {
+    disposed = true;
+    status?.removeEventListener("change", handleChange);
+  };
 }
 
 function acquirePosition(): Promise<GeolocationPosition> {
@@ -50,12 +134,13 @@ function acquirePosition(): Promise<GeolocationPosition> {
     navigator.geolocation.getCurrentPosition(
       resolve,
       (error) => {
-        const code: LocationFailure =
-          error.code === error.PERMISSION_DENIED
-            ? "permission_denied"
-            : error.code === error.TIMEOUT
-              ? "timeout"
-              : "position_unavailable";
+        const code = mapGeolocationErrorCode(error.code);
+        if (process.env.NODE_ENV === "development")
+          console.debug("[location] geolocation failure", {
+            platform: getLocationClientPlatform(),
+            errorCode: error.code,
+            failure: code,
+          });
         reject(new LocationServiceError(code, error.message));
       },
       {
@@ -74,6 +159,18 @@ export async function updateCurrentLocation(
 ): Promise<CoupleLocationRow> {
   if (pendingRequest) return pendingRequest;
   pendingRequest = (async () => {
+    const permission = await getLocationPermission();
+    if (permission === "denied")
+      throw new LocationServiceError(
+        "permission_denied",
+        locationFailureMessage("permission_denied"),
+      );
+    if (permission === "unsupported")
+      throw new LocationServiceError(
+        "unsupported",
+        locationFailureMessage("unsupported"),
+      );
+
     const supabase = createClient();
     let existing: CoupleLocationRow | null = null;
     if (!force) {
@@ -84,6 +181,7 @@ export async function updateCurrentLocation(
         .maybeSingle();
       existing = data as CoupleLocationRow | null;
       if (
+        permission === "granted" &&
         existing?.updated_at &&
         Date.now() - new Date(existing.updated_at).getTime() <
           locationConfig.minimumUpdateIntervalMs
@@ -124,7 +222,7 @@ export async function updateCurrentLocation(
           longitude: position.coords.longitude,
           accuracy_meters: position.coords.accuracy,
           sharing_enabled: true,
-          platform: platform(),
+          platform: getLocationClientPlatform(),
           updated_at: new Date(position.timestamp).toISOString(),
         },
         { onConflict: "user_id" },

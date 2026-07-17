@@ -1,25 +1,46 @@
 "use client";
 
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { isLocationStale } from "@/lib/location/distance";
+import {
+  shouldProbeUnknownPermissionOnResume,
+  shouldRefreshLocationOnResume,
+} from "@/lib/location/status";
 import { createClient } from "@/lib/supabase/client";
 import {
   deleteCurrentLocation,
+  getLocationClientPlatform,
   getLocationPermission,
+  getLocationRuntime,
+  isLocationPermissionsApiSupported,
+  locationFailureMessage,
   LocationServiceError,
+  observeLocationPermission,
+  reconcileLocationPermission,
   updateCurrentLocation,
   updateLocationPreferences,
 } from "@/services/location/location-service";
 import type {
   CoupleLocationRow,
+  LocationDataState,
+  LocationFailure,
   LocationPermissionState,
+  LocationSharingState,
 } from "@/types/location";
 
 interface UseCoupleLocationOptions {
   coupleId: string;
   currentUserId: string;
   partnerId: string | null;
+}
+
+function failureDataState(failure: LocationFailure): LocationDataState {
+  if (failure === "timeout") return "timeout";
+  if (failure === "position_unavailable" || failure === "unsupported")
+    return "unavailable";
+  return "position_error";
 }
 
 export function useCoupleLocation({
@@ -30,9 +51,20 @@ export function useCoupleLocation({
   const [locations, setLocations] = useState<CoupleLocationRow[]>([]);
   const [permission, setPermission] =
     useState<LocationPermissionState>("unknown");
+  const permissionRef = useRef<LocationPermissionState>("unknown");
+  const [failure, setFailure] = useState<LocationFailure | null>(null);
+  const [loadError, setLoadError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState<string>();
+
+  const updatePermission = useCallback((next: LocationPermissionState) => {
+    permissionRef.current = next;
+    setPermission(next);
+    if (next === "granted")
+      setFailure((current) =>
+        current === "permission_denied" ? null : current,
+      );
+  }, []);
 
   const load = useCallback(async () => {
     const { data, error: queryError } = await createClient()
@@ -41,34 +73,44 @@ export function useCoupleLocation({
       .eq("couple_id", coupleId);
     if (queryError) throw new Error("Konum durumları yüklenemedi.");
     setLocations((data ?? []) as CoupleLocationRow[]);
+    setLoadError(undefined);
   }, [coupleId]);
 
   const refresh = useCallback(
     async (force = true) => {
       setIsUpdating(true);
-      setError(undefined);
+      setFailure(null);
+      setLoadError(undefined);
       try {
+        const currentPermission = await getLocationPermission();
+        updatePermission(currentPermission);
+        if (currentPermission === "denied")
+          throw new LocationServiceError(
+            "permission_denied",
+            locationFailureMessage("permission_denied"),
+          );
+        if (currentPermission === "unsupported")
+          throw new LocationServiceError(
+            "unsupported",
+            locationFailureMessage("unsupported"),
+          );
+
         await updateCurrentLocation(currentUserId, coupleId, force);
         await load();
-        setPermission("granted");
+        updatePermission("granted");
       } catch (updateError) {
-        const message =
+        const nextFailure: LocationFailure =
           updateError instanceof LocationServiceError
-            ? updateError.code === "permission_denied"
-              ? "Konum izni reddedildi. Tarayıcı veya cihaz ayarlarından izin verebilirsin."
-              : updateError.code === "timeout"
-                ? "Konum isteği zaman aşımına uğradı. Tekrar deneyebilirsin."
-                : updateError.code === "unsupported"
-                  ? "Bu cihaz konum paylaşımını desteklemiyor."
-                  : "Konum alınamadı. Konum servisinin açık olduğunu kontrol et."
-            : "Konum güncellenemedi. Lütfen tekrar dene.";
-        setError(message);
-        setPermission(await getLocationPermission());
+            ? updateError.code
+            : "save_failed";
+        setFailure(nextFailure);
+        if (nextFailure === "permission_denied") updatePermission("denied");
+        else updatePermission(await getLocationPermission());
       } finally {
         setIsUpdating(false);
       }
     },
-    [coupleId, currentUserId, load],
+    [coupleId, currentUserId, load, updatePermission],
   );
 
   const setPreference = useCallback(
@@ -80,29 +122,38 @@ export function useCoupleLocation({
         >
       >,
     ) => {
-      setError(undefined);
-      await updateLocationPreferences(currentUserId, coupleId, preferences);
-      await load();
+      setLoadError(undefined);
+      try {
+        await updateLocationPreferences(currentUserId, coupleId, preferences);
+        await load();
+      } catch (preferenceError) {
+        setLoadError("Konum tercihi kaydedilemedi. Lütfen tekrar dene.");
+        throw preferenceError;
+      }
     },
     [coupleId, currentUserId, load],
   );
 
-  const enable = useCallback(async () => {
-    await setPreference({ sharing_enabled: true });
-    await refresh(true);
-  }, [refresh, setPreference]);
+  // Sharing is enabled only after a real position is acquired and saved.
+  const enable = useCallback(async () => refresh(true), [refresh]);
 
   const removeLocation = useCallback(async () => {
-    await deleteCurrentLocation(currentUserId);
-    await load();
+    try {
+      await deleteCurrentLocation(currentUserId);
+      await load();
+      setFailure(null);
+    } catch (deleteError) {
+      setLoadError("Konum verisi silinemedi. Lütfen tekrar dene.");
+      throw deleteError;
+    }
   }, [currentUserId, load]);
 
   useEffect(() => {
     void Promise.all([load(), getLocationPermission()])
-      .then(([, permissionState]) => setPermission(permissionState))
-      .catch(() => setError("Konum bilgileri yüklenemedi."))
+      .then(([, permissionState]) => updatePermission(permissionState))
+      .catch(() => setLoadError("Konum bilgileri yüklenemedi."))
       .finally(() => setIsLoading(false));
-  }, [load]);
+  }, [load, updatePermission]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -147,31 +198,125 @@ export function useCoupleLocation({
   const partnerLocation = locations.find(
     (location) => location.user_id === partnerId,
   );
+  const sharing: LocationSharingState = ownLocation?.sharing_enabled
+    ? "enabled"
+    : "disabled";
 
-  useEffect(() => {
-    if (!ownLocation?.sharing_enabled) return;
-    void refresh(false);
-    const handleVisibility = () => {
-      if (
-        document.visibilityState === "visible" &&
-        ownLocation.background_updates_enabled
-      )
-        void refresh(false);
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
+  const recheckPermission = useCallback(async () => {
+    const previousPermission = permissionRef.current;
+    const observedPermission = await getLocationPermission();
+    if (
+      shouldProbeUnknownPermissionOnResume({
+        sharing,
+        previousPermission,
+        nextPermission: observedPermission,
+      })
+    ) {
+      await refresh(false);
+      return;
+    }
+    const nextPermission = reconcileLocationPermission(
+      previousPermission,
+      observedPermission,
+    );
+    updatePermission(nextPermission);
+    if (
+      shouldRefreshLocationOnResume({
+        sharing,
+        backgroundUpdatesEnabled:
+          ownLocation?.background_updates_enabled ?? false,
+        previousPermission,
+        nextPermission,
+      })
+    )
+      await refresh(false);
   }, [
     ownLocation?.background_updates_enabled,
-    ownLocation?.sharing_enabled,
     refresh,
+    sharing,
+    updatePermission,
   ]);
+
+  useEffect(() => {
+    const stopObserving = observeLocationPermission((observedPermission) => {
+      const previousPermission = permissionRef.current;
+      const nextPermission = reconcileLocationPermission(
+        previousPermission,
+        observedPermission,
+      );
+      updatePermission(nextPermission);
+      if (
+        shouldRefreshLocationOnResume({
+          sharing,
+          backgroundUpdatesEnabled:
+            ownLocation?.background_updates_enabled ?? false,
+          previousPermission,
+          nextPermission,
+        })
+      )
+        void refresh(false);
+    });
+    return stopObserving;
+  }, [
+    ownLocation?.background_updates_enabled,
+    refresh,
+    sharing,
+    updatePermission,
+  ]);
+
+  useEffect(() => {
+    const handleFocus = () => void recheckPermission();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void recheckPermission();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [recheckPermission]);
+
+  useEffect(() => {
+    if (sharing === "enabled" && permission !== "denied") void refresh(false);
+  }, [permission, refresh, sharing]);
+
+  const hasOwnCoordinates =
+    ownLocation?.latitude != null && ownLocation.longitude != null;
+  const dataState: LocationDataState = isLoading
+    ? "loading"
+    : failure
+      ? failureDataState(failure)
+      : hasOwnCoordinates
+        ? isLocationStale(ownLocation?.updated_at)
+          ? "stale"
+          : "available"
+        : "idle";
+  const error =
+    loadError ?? (failure ? locationFailureMessage(failure) : undefined);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    console.debug("[location] state", {
+      platform: getLocationClientPlatform(),
+      runtime: getLocationRuntime(),
+      permissionsApi: isLocationPermissionsApiSupported(),
+      permission,
+      sharing,
+      dataState,
+      hasOwnLocation: Boolean(ownLocation),
+      hasPartnerLocation: Boolean(partnerLocation),
+      updatedAt: ownLocation?.updated_at ?? null,
+    });
+  }, [dataState, ownLocation, partnerLocation, permission, sharing]);
 
   return useMemo(
     () => ({
       ownLocation,
       partnerLocation,
       permission,
+      sharing,
+      dataState,
       isLoading,
       isUpdating,
       error,
@@ -184,6 +329,8 @@ export function useCoupleLocation({
       ownLocation,
       partnerLocation,
       permission,
+      sharing,
+      dataState,
       isLoading,
       isUpdating,
       error,

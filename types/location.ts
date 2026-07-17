@@ -14,6 +14,17 @@ export interface CoupleLocationRow {
 export type LocationPermissionState =
   "prompt" | "granted" | "denied" | "unsupported" | "unknown";
 
+export type LocationSharingState = "enabled" | "disabled";
+
+export type LocationDataState =
+  | "idle"
+  | "loading"
+  | "available"
+  | "unavailable"
+  | "timeout"
+  | "position_error"
+  | "stale";
+
 export type LocationFailure =
   | "permission_denied"
   | "position_unavailable"
