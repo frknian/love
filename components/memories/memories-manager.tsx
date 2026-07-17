@@ -98,24 +98,40 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     setFileName("Dosya seçilmedi");
   }
 
-  async function startRecording() {
+  async function getMicrophoneStream(): Promise<MediaStream | null> {
     if (!window.isSecureContext) {
       setError("Ses kaydı için siteyi HTTPS bağlantısıyla açmalısın.");
-      return;
+      return null;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
       setError("Bu tarayıcı mikrofon erişimini desteklemiyor.");
-      return;
+      return null;
     }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (recordingError) {
+      const errorName =
+        recordingError instanceof DOMException ? recordingError.name : "";
+      setError(
+        errorName === "NotAllowedError" || errorName === "PermissionDeniedError"
+          ? "Mikrofon izni verilmedi. Adres çubuğundaki kilit simgesinden mikrofon iznini açıp tekrar dene."
+          : "Mikrofon açılamadı. Tarayıcı ayarlarından mikrofon iznini kontrol edip tekrar dene.",
+      );
+      return null;
+    }
+  }
+
+  async function startRecording() {
     setError(undefined);
     clearRecordedAudio();
+    const stream = await getMicrophoneStream();
+    if (!stream) return;
+    if (!window.MediaRecorder) {
+      stream.getTracks().forEach((track) => track.stop());
+      setError("Bu tarayıcı ses kaydı oluşturmayı desteklemiyor.");
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (!window.MediaRecorder) {
-        stream.getTracks().forEach((track) => track.stop());
-        setError("Bu tarayıcı ses kaydı oluşturmayı desteklemiyor.");
-        return;
-      }
       const mimeType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
         (type) =>
           typeof MediaRecorder.isTypeSupported !== "function" ||
@@ -150,14 +166,11 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       setRecordingSeconds(0);
       setIsRecording(true);
     } catch (recordingError) {
-      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
-      recordingStreamRef.current = null;
-      const errorName =
-        recordingError instanceof DOMException ? recordingError.name : "";
+      stream.getTracks().forEach((track) => track.stop());
       setError(
-        errorName === "NotAllowedError" || errorName === "PermissionDeniedError"
-          ? "Mikrofon izni verilmedi. Adres çubuğundaki kilit simgesinden mikrofon iznini açıp tekrar dene."
-          : "Mikrofon açılamadı. Tarayıcı ayarlarından mikrofon iznini kontrol edip tekrar dene.",
+        recordingError instanceof DOMException
+          ? "Ses kaydı başlatılamadı. Tekrar dene."
+          : "Ses kaydı başlatılamadı.",
       );
     }
   }
@@ -343,6 +356,9 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
                   clearRecordedAudio();
                   setFileName("Dosya seçilmedi");
                   setError(undefined);
+                  if (value === "audio") void getMicrophoneStream().then((stream) => {
+                    stream?.getTracks().forEach((track) => track.stop());
+                  });
                 }}
                 type="button"
               >
