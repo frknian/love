@@ -10,19 +10,30 @@ import { WelcomeCard } from "@/components/home/welcome-card";
 import { PageShell } from "@/components/layout/page-shell";
 import { InteractionPicker } from "@/components/notifications/interaction-picker";
 import { InteractionUnavailableCard } from "@/components/notifications/interaction-unavailable-card";
+import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
 import { getBucketItems, getBucketLists } from "@/lib/bucket/queries";
 import { withProgress } from "@/lib/bucket/bucket-mapper";
 import { getNextLockedCapsule } from "@/lib/capsule/queries";
-import { getCountdowns, getLatestCountdown } from "@/lib/countdowns/queries";
+import { getCountdowns } from "@/lib/countdowns/queries";
 import { toUpcomingOccurrences } from "@/lib/events/calendar";
 import { getEvents } from "@/lib/events/queries";
 import { getLatestJournalEntry } from "@/lib/journal/queries";
-import { homeSnapshot } from "@/lib/mock-data";
-import { differenceInDays, fromIsoDate } from "@/lib/date-utils";
 import {
   getEngagementContext,
   getLatestNotification,
 } from "@/lib/notifications/queries";
+
+const homeRealtimeTables = [
+  "albums",
+  "bucket_items",
+  "bucket_lists",
+  "countdowns",
+  "events",
+  "journals",
+  "memories",
+  "notes",
+  "notifications",
+];
 
 export default async function HomePage() {
   const [
@@ -30,7 +41,6 @@ export default async function HomePage() {
     latestNotification,
     events,
     countdowns,
-    latestCountdown,
     bucketLists,
     bucketItems,
     latestJournalEntry,
@@ -40,7 +50,6 @@ export default async function HomePage() {
     getLatestNotification().catch(() => null),
     getEvents().catch(() => []),
     getCountdowns().catch(() => []),
-    getLatestCountdown().catch(() => null),
     getBucketLists().catch(() => []),
     getBucketItems().catch(() => []),
     getLatestJournalEntry().catch(() => null),
@@ -54,20 +63,35 @@ export default async function HomePage() {
   const activeBucketList = bucketLists.length
     ? withProgress(bucketLists[0], bucketItems)
     : null;
-  const daysTogether = context?.relationshipStartDate
-    ? Math.max(
-        0,
-        differenceInDays(
-          new Date(),
-          fromIsoDate(context.relationshipStartDate),
-        ),
-      )
-    : homeSnapshot.daysTogether;
+  const latestCountdown = countdowns.reduce<(typeof countdowns)[number] | null>(
+    (latest, countdown) =>
+      !latest || countdown.createdAt > latest.createdAt ? countdown : latest,
+    null,
+  );
+  const partnerNames = context
+    ? [context.displayName, context.partnerName].filter(Boolean).join(" 🤍 ")
+    : "Bizim Hikâyemiz";
+  const homeRealtimeSubscriptions = context
+    ? [
+        ...homeRealtimeTables.map((table) => ({
+          table,
+          filter: "couple_id=eq." + context.coupleId,
+        })),
+        { table: "couples", filter: "id=eq." + context.coupleId },
+        { table: "profiles", filter: "couple_id=eq." + context.coupleId },
+      ]
+    : [];
 
   return (
     <PageShell>
       <div className="space-y-4">
-        <WelcomeCard partnerNames={homeSnapshot.partnerNames} />
+        {context ? (
+          <RealtimePageRefresh
+            channelName={"home:" + context.coupleId}
+            subscriptions={homeRealtimeSubscriptions}
+          />
+        ) : null}
+        <WelcomeCard partnerNames={partnerNames} />
         {context?.partnerId ? (
           <InteractionPicker
             coupleId={context.coupleId}
@@ -91,7 +115,9 @@ export default async function HomePage() {
           <BucketProgressCard list={activeBucketList} />
           <UpcomingCapsuleCard capsule={nextCapsule} />
           <LatestCountdownCard countdown={latestCountdown} />
-          <StatCard days={daysTogether} />
+          <StatCard
+            relationshipStartDate={context?.relationshipStartDate ?? null}
+          />
         </div>
       </div>
     </PageShell>

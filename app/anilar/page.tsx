@@ -3,6 +3,7 @@ import { Heart, Images } from "lucide-react";
 import { MemoriesManager } from "@/components/memories/memories-manager";
 import { MemoryCard } from "@/components/memories/memory-card";
 import { PageShell } from "@/components/layout/page-shell";
+import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
 import { Card } from "@/components/ui/card";
 import { getAlbums, getMemories, getMemoriesContext } from "@/lib/memories";
 
@@ -73,6 +74,13 @@ export default async function MemoriesPage() {
 
         {context ? (
           <div className="mt-6">
+            <RealtimePageRefresh
+              channelName={"memories:" + context.coupleId}
+              subscriptions={["albums", "memories"].map((table) => ({
+                table,
+                filter: "couple_id=eq." + context.coupleId,
+              }))}
+            />
             <MemoriesManager albums={albumsWithPreviews} context={context} />
           </div>
         ) : null}

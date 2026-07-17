@@ -39,6 +39,11 @@ export function differenceInDays(target: Date, from: Date): number {
   );
 }
 
+/** İlişki başlangıcından itibaren geçen gün sayısı; gelecek tarihleri sıfırlar. */
+export function daysSince(isoDate: string, now = new Date()): number {
+  return Math.max(0, differenceInDays(now, fromIsoDate(isoDate)));
+}
+
 /** Pazartesi başlangıçlı hafta başı. */
 export function startOfWeek(date: Date): Date {
   const day = startOfDay(date);

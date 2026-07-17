@@ -2,6 +2,7 @@ import { UserRound } from "lucide-react";
 
 import { ProfileCard } from "@/components/auth/profile-card";
 import { PageShell } from "@/components/layout/page-shell";
+import { RealtimePageRefresh } from "@/components/realtime/realtime-page-refresh";
 import { CoupleInfoCard } from "@/components/profile/couple-info-card";
 import { ProfileStatsGrid } from "@/components/profile/profile-stats-grid";
 import { getEngagementContext } from "@/lib/notifications/queries";
@@ -19,6 +20,15 @@ export default async function ProfilePage() {
 
   return (
     <PageShell>
+      {context ? (
+        <RealtimePageRefresh
+          channelName={"profile:" + context.coupleId}
+          subscriptions={[
+            { table: "couples", filter: "id=eq." + context.coupleId },
+            { table: "profiles", filter: "couple_id=eq." + context.coupleId },
+          ]}
+        />
+      ) : null}
       <section className="pt-2">
         <span className="grid size-14 place-items-center rounded-2xl bg-rose-100 text-rose-500 dark:bg-rose-500/20 dark:text-rose-300">
           <UserRound className="size-7" />

@@ -7,37 +7,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Album, MemoriesContext } from "@/types/memories";
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
-const ACCEPTED_IMAGE_EXTENSIONS = new Set([
-  "avif",
-  "bmp",
-  "gif",
-  "heic",
-  "heif",
-  "ico",
-  "jpeg",
-  "jpg",
-  "png",
-  "svg",
-  "tif",
-  "tiff",
-  "webp",
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
 ]);
 
 function isSupportedImage(file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  return (
-    file.type.startsWith("image/") ||
-    Boolean(extension && ACCEPTED_IMAGE_EXTENSIONS.has(extension))
-  );
-}
-
-function getUploadContentType(file: File) {
-  if (file.type.startsWith("image/")) return file.type;
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  return extension
-    ? `image/${extension === "jpg" ? "jpeg" : extension}`
-    : "application/octet-stream";
+  return ACCEPTED_IMAGE_TYPES.has(file.type);
 }
 
 interface MemoriesManagerProps {
@@ -91,7 +69,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     }
     if (!isSupportedImage(file) || file.size > MAX_FILE_SIZE_BYTES) {
       setError(
-        "Desteklenen bir fotoğraf formatında ve en fazla 50 MB bir dosya seç.",
+        "JPEG, PNG veya WebP formatında ve en fazla 10 MB bir fotoğraf seç.",
       );
       return;
     }
@@ -103,7 +81,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     const { error: uploadError } = await supabase.storage
       .from("memories")
       .upload(imagePath, file, {
-        contentType: getUploadContentType(file),
+        contentType: file.type,
         upsert: false,
       });
     if (uploadError) {
@@ -184,7 +162,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
         </div>
         <div className="mt-4 space-y-3">
           <input
-            accept="image/*,.heic,.heif"
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             id="memory-image"
             name="image"

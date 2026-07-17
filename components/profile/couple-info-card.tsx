@@ -1,7 +1,10 @@
+"use client";
+
 import { CalendarHeart, Heart } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { differenceInDays, formatDateTr, fromIsoDate } from "@/lib/date-utils";
+import { useNow } from "@/hooks/use-now";
+import { daysSince, formatDateTr, fromIsoDate } from "@/lib/date-utils";
 
 interface CoupleInfoCardProps {
   coupleName: string;
@@ -12,8 +15,9 @@ export function CoupleInfoCard({
   coupleName,
   relationshipStartDate,
 }: CoupleInfoCardProps) {
+  const now = useNow(60_000);
   const daysTogether = relationshipStartDate
-    ? differenceInDays(new Date(), fromIsoDate(relationshipStartDate))
+    ? daysSince(relationshipStartDate, now)
     : null;
 
   return (

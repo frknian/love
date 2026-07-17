@@ -1,12 +1,22 @@
+"use client";
+
 import { CalendarHeart } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { useNow } from "@/hooks/use-now";
+import { daysSince } from "@/lib/date-utils";
 
 interface StatCardProps {
-  days: number;
+  relationshipStartDate: string | null;
 }
 
-export function StatCard({ days }: StatCardProps) {
+export function StatCard({ relationshipStartDate }: StatCardProps) {
+  // Dakikada bir hesaplanır; gece yarısından sonra sayfa yenilenmeden artar.
+  const now = useNow(60_000);
+  const days = relationshipStartDate
+    ? daysSince(relationshipStartDate, now)
+    : 0;
+
   return (
     <Card className="flex items-center gap-4">
       <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-rose-100 text-rose-500 dark:bg-rose-500/20 dark:text-rose-300">
