@@ -1,68 +1,111 @@
-# Bizim Hikâyemiz
+# Bizim Hikâyemiz · Our Story
 
-Çiftlerin ortak anılarını, notlarını ve özel anlarını zamanla tek bir yerde biriktirmesi için tasarlanmış mobil öncelikli PWA arayüzü.
+> A private, real-time shared space for couples to preserve memories, plan meaningful moments, and stay connected.
+>
+> Çiftlerin anılarını saklayabildiği, özel anlarını planlayabildiği ve bağlarını canlı tutabildiği gizli, gerçek zamanlı ortak alan.
 
-## Teknolojiler
+[English](#english) · [Türkçe](#türkçe)
 
-- Next.js 15 ve App Router
-- TypeScript
-- Tailwind CSS
-- shadcn/ui uyumlu bileşen altyapısı
-- Lucide Icons ve Framer Motion
-- ESLint ve Prettier
-- Web App Manifest ve Service Worker
+---
 
-## Kurulum
+## English
 
-Node.js 20.9 veya üzerini kullanın.
+### Overview
 
-```bash
-npm install
+Bizim Hikâyemiz is a mobile-first Progressive Web App built for two people. Each account belongs to a private couple space created through a secure invitation flow. Memories, notes, plans, interactions, and profile information are synchronized between both partners in real time.
+
+The application combines a polished mobile experience with a security model enforced at the database and storage layers. Couple data is isolated with Supabase Row Level Security, media is stored in private buckets, and access is scoped to authenticated members of the same couple.
+
+### Highlights
+
+- **Secure couple pairing:** create a private couple space or join one with a unique invitation code.
+- **Shared couple profile:** names, profile photo, relationship date, automatic day count, story, highlights, and statistics.
+- **Memories and albums:** upload, browse, favorite, edit, and organize private photos.
+- **Notes and shared journal:** write together with live updates and offline note recovery.
+- **Calendar and countdowns:** manage important dates, recurring events, meetings, and milestones.
+- **Emotional interactions:** send expressive in-app interactions with animations, haptics, unread state, and live delivery.
+- **Browser notifications:** a user-controlled notification permission flow and infrastructure for web interactions.
+- **Privacy-focused distance:** optional, battery-conscious location updates that show distance and freshness—never raw coordinates in the interface.
+- **Bucket lists and time capsules:** track shared goals and keep messages or attachments locked until a chosen date.
+- **Mood and quick status:** share lightweight personal states with partner-aware visibility and database-backed authorization.
+- **Installable PWA:** responsive design, offline fallback, update prompts, and home-screen installation support.
+
+### Technology
+
+| Area               | Stack                                        |
+| ------------------ | -------------------------------------------- |
+| Application        | Next.js 15, React 19, App Router             |
+| Language           | TypeScript                                   |
+| Styling and motion | Tailwind CSS, Framer Motion, Lucide Icons    |
+| Backend            | Supabase Auth, PostgreSQL, Storage, Realtime |
+| Validation         | Zod                                          |
+| Testing            | Vitest, ESLint, TypeScript                   |
+| PWA                | Web App Manifest, Service Worker, IndexedDB  |
+
+### Architecture
+
+```text
+app/                  Routes, layouts, loading and error boundaries
+components/           Feature-oriented interface components
+hooks/                Client state and realtime subscriptions
+lib/                  Queries, validation, mapping and domain utilities
+services/             Feature services and write operations
+supabase/migrations/  Schema, functions, triggers and RLS policies
+tests/unit/            Unit and regression tests
+public/                PWA assets and service worker
 ```
 
-Ardından örnek ortam değişkenlerini kopyalayın ve kendi Supabase proje bilgilerinizle doldurun:
+UI components delegate mutations to typed services, reusable hooks manage client state and filtered realtime channels, and database policies remain the final authorization boundary.
 
-```bash
-cp .env.example .env.local
-```
+### Requirements
 
-## Supabase kurulumu ve giriş
+- Node.js 20.9 or newer
+- npm
+- A Supabase project
+- Supabase CLI for database migrations
 
-1. [Supabase Dashboard](https://supabase.com/dashboard) üzerinde bir proje oluşturun.
-2. **Connect** ekranından proje URL'sini ve publishable key'i alın. Eski projelerde anon key de kullanılabilir.
-3. Bu değerleri sırasıyla `NEXT_PUBLIC_SUPABASE_URL` ve `NEXT_PUBLIC_SUPABASE_ANON_KEY` olarak `.env.local` dosyasına ekleyin.
-4. Dashboard'da **Authentication > Providers > Email** ayarından yeni kullanıcı kayıtlarına izin verildiğinden emin olun (uygulama artık açık kayıt kullanır). İsteğe bağlı olarak e-posta onayını kapatırsanız kayıt sonrası oturum anında açılır; açık bırakırsanız kullanıcı onay bağlantısına tıkladıktan sonra giriş yapar.
-5. **Authentication > URL Configuration** içinde yerel geliştirme adresini (`http://localhost:3000`) ve production domain'inizi izinli yönlendirme adresleri olarak ekleyin.
+### Local setup
 
-Uygulama, Supabase SSR cookie tabanlı session yönetimini kullanır. Middleware her istekte oturumu yeniler; giriş yapmamış kullanıcıları `/login` sayfasına yönlendirir. Kimliği doğrulanmış ama henüz bir çifte katılmamış kullanıcılar `/onboarding` sayfasına yönlendirilir.
+1. Install dependencies:
 
-### Kayıt, profil ve çift eşleşmesi
+   ```bash
+   npm install
+   ```
 
-Yeni kullanıcı `/kayit` üzerinden hesap oluşturduktan sonra `/onboarding` ekranına yönlendirilir. Burada kendi çiftini oluşturup davet kodu üretebilir veya partnerinin kodunu girerek mevcut çifte katılabilir. Bu akış `create_couple_and_profile` ve `join_couple_by_code` RPC fonksiyonlarıyla atomik biçimde çalışır.
+2. Create a local environment file:
 
-Migration'lar uygulandıktan sonra iki demo hesabı ve modülleri örnek verilerle doldurmak için:
+   ```bash
+   cp .env.example .env.local
+   ```
 
-```bash
-npm run simulate
-```
+3. Add your public Supabase credentials:
 
-Komut `.env.local` içindeki `DEV_DEMO_OWNER_*` ve `DEV_DEMO_PARTNER_*` değerlerini kullanır. Gerçek kullanıcı verilerini silmez; sabit demo kimlikleriyle tekrar çalıştırılabilir.
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
+   ```
 
-### Açık kayıt ve davet kodu ile eşleşme
+4. Link the database and apply migrations:
 
-Önceki kapalı mimaride (`ALLOWED_USER_EMAILS` / `APP_OWNER_EMAIL`) yalnızca dashboard'dan manuel oluşturulan iki hesap giriş yapabiliyordu. Artık uygulama herkese açık:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npx supabase db push
+   ```
 
-1. `/kayit` sayfasından herhangi biri e-posta/şifre ile kayıt olabilir.
-2. İlk kez giriş yapan (henüz bir çifte ait olmayan) kullanıcı otomatik olarak `/onboarding`'e yönlendirilir.
-3. Onboarding'de **"Yeni çift oluştur"** seçilirse: ad ve isteğe bağlı avatar girilir, `create_couple_and_profile` RPC'si yeni bir `couples` satırı ve benzersiz bir davet kodu üretir, kullanıcı `owner` rolüyle kaydedilir.
-4. Partner, bu kodu **"Davet koduyla katıl"** seçeneğinde girerek `join_couple_by_code` RPC'si ile aynı çifte `partner` rolüyle katılır.
-5. Bir çiftte en fazla iki profil olabilir; RPC bunu sunucu tarafında zorunlu kılar. Davet kodu geçersizse veya çift zaten doluysa kullanıcıya anlaşılır bir hata gösterilir.
+5. In Supabase Authentication settings, enable email registration and add `http://localhost:3000` to the allowed redirect URLs.
 
-Bu iki RPC `security definer` olarak tanımlıdır: bootstraplama anında kullanıcının henüz `couple_id`'si olmadığından normal RLS politikaları bu adımı gerçekleştiremez; fonksiyonlar gövde içinde kendi güvenlik kontrollerini (tekil profil, kod geçerliliği, üye sayısı sınırı) uygular.
+6. Start the application:
 
-### Development Login Mode
+   ```bash
+   npm run dev
+   ```
 
-Yalnızca `NODE_ENV=development` iken giriş ekranında iki demo hesabı görünür. Aşağıdaki değerleri yalnızca yerel `.env.local` dosyanıza ekleyin; şifreler hiçbir zaman tarayıcıya gönderilmez:
+Open `http://localhost:3000` in your browser.
+
+### Optional demo accounts
+
+Development-only demo login can be configured in `.env.local`. These accounts must already exist in Supabase and have profile records associated with a couple.
 
 ```env
 DEV_DEMO_OWNER_EMAIL=
@@ -71,231 +114,214 @@ DEV_DEMO_PARTNER_EMAIL=
 DEV_DEMO_PARTNER_PASSWORD=
 ```
 
-Bu hesapların Supabase'de önceden oluşturulmuş olması ve bir çifte katılmış (yani `profiles` satırına sahip) olması gerekir — aksi hâlde demo girişten sonra da `/onboarding`'e yönlendirilirler. Production ortamında demo arayüzü ve demo giriş endpoint'i tamamen devre dışıdır; normal Supabase giriş/kayıt akışı değişmeden kalır.
+Create or refresh isolated demo data with `npm run simulate`. The demo login endpoint is disabled in production, and credentials are never exposed to the browser.
 
-## Database, RLS ve Anılar
+### Scripts
 
-`supabase/migrations/20260711140000_create_memories_schema.sql` aşağıdaki yapıyı kurar:
+| Command                | Purpose                              |
+| ---------------------- | ------------------------------------ |
+| `npm run dev`          | Start the development server         |
+| `npm run build`        | Create an optimized production build |
+| `npm run start`        | Serve the production build           |
+| `npm run lint`         | Run static analysis                  |
+| `npm run typecheck`    | Validate TypeScript types            |
+| `npm test`             | Run the test suite once              |
+| `npm run test:watch`   | Run tests in watch mode              |
+| `npm run format`       | Format the project                   |
+| `npm run format:check` | Check formatting without changes     |
+| `npm run simulate`     | Create or update isolated demo data  |
 
-- `couples`, `profiles`, `albums` ve `memories` tabloları ile ilişkileri
-- Tüm tablolarda RLS politikaları
-- Private `memories` Storage bucket'ı; 10 MB'a kadar JPEG, PNG ve WebP dosyaları
-- Dosyalar için `memories/{couple_id}/{user_id}/{uuid}` yol şeması
+### Security and privacy
 
-Migration'ı Supabase CLI ile uygulamak için:
+- Couple-owned tables are protected by Row Level Security.
+- Reads and writes are restricted to authenticated members of the same couple.
+- Invitation functions validate membership, capacity, and duplicate profiles on the server.
+- Private media uses couple- and user-scoped paths with short-lived signed URLs.
+- Location sharing is opt-in; the interface exposes distance and freshness, not exact coordinates.
+- Gender data is used only for feature authorization and is not displayed in shared views.
+- Sensitive time-capsule content remains inaccessible until its unlock date.
+- Production headers enforce HTTPS, content restrictions, frame protection, referrer policy, and explicit browser permissions.
+- Service workers do not store Supabase sessions or secrets.
 
-```bash
-npx supabase login
-npx supabase link --project-ref <project-ref>
-npx supabase db push
-```
+> Client-side checks improve the experience; database policies and validated server-side functions enforce access control.
 
-[`supabase/seed.example.sql`](supabase/seed.example.sql) artık zorunlu değildir — `/kayit` ve `/onboarding` üzerinden herkes kendi çiftini oluşturabilir. Dosya yalnızca hızlı yerel test verisi oluşturmak isteyenler için opsiyonel bir kısayol olarak korunmuştur.
+### Quality checks
 
-Görseller private bucket'ta kalır; uygulama listeleme sırasında kısa süreli signed URL üretir. RLS hem veritabanında hem Storage nesnelerinde yalnızca aynı `couple_id` kapsamındaki erişime izin verir.
-
-## Ortak notlar ve Realtime
-
-`supabase/migrations/20260711150000_create_notes.sql`, `notes` tablosunu, RLS politikalarını, `updated_at` trigger'ını ve `supabase_realtime` yayınına eklemeyi içerir. Migration uygulandıktan sonra iki kullanıcı arasında ekleme, düzenleme ve silme olayları sayfa yenilenmeden senkronize olur.
-
-İstemci tarafındaki `useNotes` hook'u çift kimliğiyle filtrelenen Postgres Changes kanalına abone olur. INSERT ve UPDATE olayları doğrudan yerel nota yazılır; DELETE olayında mevcut listedeki eşleşen kimlik kaldırılır. Kanal, bileşen ayrıldığında kapatılır ve geçici bağlantı sorunlarında kullanıcıya bilgi gösterilir.
-
-Not erişimi RLS ile korunur: çift üyeleri notları okuyabilir ve silebilir; yalnızca notun yazarı içerik, renk ve sabitlenme durumunu güncelleyebilir.
-
-## Duygusal Bildirimler, Takvim ve Geri Sayımlar
-
-`supabase/migrations/20260711160000_create_engagement_schema.sql` üç yeni tabloyu kurar:
-
-- `notifications`: çift içi duygusal etkileşimler (`notification_type`, `title`, `message`, `icon`, `animation`, `is_read`, `delivered_at`)
-- `events`: özel günler ve planlar (`event_type`, `event_date`, `repeat_yearly`, opsiyonel `cover_image`)
-- `countdowns`: geri sayımlar (`icon`, `target_date`, opsiyonel `cover_image`)
-
-Üç tablo da RLS ile yalnızca aynı `couple_id` kapsamına açıktır ve `supabase_realtime` yayınına eklidir. Bildirimlerde ek güvenceler vardır: gönderen yalnızca kendi kimliğiyle, alıcı yalnızca aynı çiftin üyesi olacak şekilde ekleme yapılabilir (`profile_in_current_couple` yardımcı fonksiyonu); güncelleme yalnızca alıcıya açıktır ve bir trigger içerik alanlarının değiştirilmesini engeller — yalnızca `is_read` ve `delivered_at` değişebilir.
-
-### Bildirim mimarisi
-
-- **Etkileşim kataloğu** (`lib/notifications/interactions.ts`): 15 hazır duygusal etkileşim (Seni Özledim, Sarıldım, Öpücük, Çiçek, Kahve, Günaydın, İyi Geceler, Not, Anı, Sürpriz, Şarkı, Başarılar, Kutlama, Doğum Günü, Yıldönümü). Her kayıt ikon, animasyon anahtarı, renk sınıfları, başlık, açıklama ve titreşim deseni taşır. Yeni tip eklemek için kataloğa bir kayıt eklemek yeterlidir; hiçbir bileşen değişmez.
-- **Gönderim** (`services/notifications/notifications-service.ts`): Zod ile doğrulanan insert; ardından push sağlayıcı katmanı tetiklenir.
-- **Push hazırlığı** (`services/notifications/push-provider.ts`): `PushProvider` arayüzü ve şimdilik no-op sağlayıcı. Web Push/FCM eklemek istediğinizde yalnızca yeni bir sağlayıcı sınıfı yazılır; gönderim akışı değişmez.
-- **Animasyonlar** (`components/notifications/notification-animation.tsx`): Framer Motion tabanlı parçacık sahneleri — uçan kalpler, düşen yapraklar, konfeti, ay-yıldız, güneş ışınları vb. Her animasyon anahtarı bir preset'e eşlenir.
-- **Haptic feedback** (`lib/notifications/haptics.ts`): `navigator.vibrate` destekleyen cihazlarda bildirim tipine özgü titreşim desenleri.
-- **Geçmiş ve filtreler** (`app/bildirimler`): Hepsi / Okunmayanlar / Gönderdiklerim / Bana Gelenler filtreleri; karta tıklanınca animasyonlu detay modalı açılır ve bildirim okundu işaretlenir.
-
-### Realtime akışı
-
-1. Gönderen, ana ekrandaki "Bugün ona ne göndermek istersin?" kartından bir etkileşime dokunur; kayıt `notifications` tablosuna yazılır.
-2. `PageShell` içine monte edilen `RealtimeNotificationListener`, alıcının `receiver_id` filtresiyle Postgres Changes kanalını dinler.
-3. INSERT geldiği anda alıcıda titreşim tetiklenir, `delivered_at` işaretlenir ve animasyonlu bildirim modalı açılır; modal kapatılınca bildirim okundu sayılır.
-4. Bildirim geçmişi (`useNotifications`), takvim (`useEvents`) ve geri sayımlar (`useCountdowns`) aynı desenle couple kanallarına abone olur; iki cihaz sayfa yenilenmeden senkron kalır.
-5. Header'daki zil (`NotificationBell`) okunmamış sayacını canlı günceller.
-
-### Etkinlik sistemi
-
-- `app/takvim` sayfası Ay / Hafta / Liste görünümleri sunar; ay görünümünde günler etkinlik tipine göre renkli noktalar taşır, seçilen günün etkinlikleri altta listelenir.
-- 10 etkinlik türü (`lib/events/event-types.ts`): Doğum Günü, Yıldönümü, İlk Tanışma, İlk Buluşma, Seyahat, Tatil, Film Gecesi, Kahve Randevusu, Özel Gün, Diğer. Katalog tabanlıdır, kolayca genişletilir.
-- FAB ile açılan bottom sheet'te başlık, açıklama, tarih, kategori, opsiyonel kapak görseli URL'si ve "her yıl tekrar etsin" seçeneği bulunur; Zod ile doğrulanır.
-- Yıllık tekrar eden etkinlikler takvimde her yıla, liste görünümünde bir sonraki gerçekleşme tarihine yansıtılır (`lib/events/calendar.ts`).
-- Detay modalı başlık, tarih, kalan gün, açıklama, oluşturan kişi ve kapak görselini gösterir; düzenleme ve silme buradan yapılır.
-
-### Geri sayım sistemi
-
-- `app/geri-sayimlar` sayfası kapak görselli kartlar halinde tüm geri sayımları listeler; her kartta kalan gün/saat/dakika/saniye canlı ilerler (`useNow` hook'u, sayfa yenilenmeden), oluşturulma anından hedefe yüzdelik ilerleme çubuğu bulunur.
-- Ana sayfada en yakın geri sayımlar `💍 48 Gün` biçiminde yatay kart şeridinde gösterilir.
-- Hesaplamalar `lib/countdowns/countdown-math.ts` içinde saf fonksiyonlardır: kalan süre ayrıştırma, yüzde ilerleme ve sıralama.
-
-### Ana sayfa dashboard'u
-
-Ana sayfa; etkileşim gönderme kartı, geri sayım şeridi ve özet kartlarla (Yaklaşan Etkinlikler, Son Etkileşim, Son Günlük, Bucket List İlerlemesi, Yaklaşan Time Capsule, Son Geri Sayım) gerçek verilerden beslenir.
-
-## Bucket List, Ortak Günlük, Time Capsule, Profil, Ayarlar ve Tema
-
-`supabase/migrations/20260711170000_create_lifestyle_schema.sql` beş yeni tabloyu kurar:
-
-- `bucket_lists` / `bucket_items`: Liste başına kapak, renk; madde başına öncelik (`priority`), sıralama pozisyonu (`position`), tamamlanma bilgisi. `priority` ve `position` alanları madde 3-4'ün gerektirdiği ama tablo listesinde yer almayan alanlar olduğu için eklendi.
-- `journals`: Ortak günlük kayıtları; `images` bir depolama yolu dizisi (jsonb) olarak tutulur.
-- `time_capsules`: Başlık her zaman görünür; `message`/`attachments` kolonları `authenticated` rolünden `REVOKE` edilmiştir ve yalnızca `get_time_capsule_content()` adlı `security definer` fonksiyonu, `unlock_date <= now()` olduğunda bu kolonları döndürür. Bu, kuralın yalnızca arayüzde değil veritabanı seviyesinde zorunlu olmasını sağlar.
-- `user_settings`: Tema, bildirim/titreşim/animasyon anahtarları, dil ve `notification_preferences` (9 bildirim türü için ayrı aç/kapat — madde 17 tablo alan listesinde yoktu, granüler tercih için eklendi).
-
-### RLS politikaları
-
-- `bucket_lists`, `bucket_items`, `journals`: mevcut `current_user_couple_id()` deseniyle çift kapsamı.
-- `user_settings`: yalnızca `user_id = auth.uid()` — sahibi dışında kimse okuyamaz/güncelleyemez.
-- `time_capsules`: satır her zaman görünür (metadata), ama kolon bazlı `REVOKE`/`GRANT` ile içerik gizlenir; güncelleme yalnızca `opened`/`opened_at` kolonlarına ve yalnızca `unlock_date <= now()` olduğunda izin verilir. Depolamada da aynı kural: `capsule_attachment_unlocked()` fonksiyonu, ek dosyalar için storage RLS'sinde açılma tarihi kontrolü yapar — ekler açılmadan indirilemez.
-- `time_capsules` kasıtlı olarak `supabase_realtime` yayınına eklenmez: Postgres Changes payload'ları RLS'yi atlayabileceğinden mesaj içeriği sızabilir. Açılma anı bunun yerine istemci tarafında `useNow` ile zaman karşılaştırmasıyla saptanır (bkz. `hooks/use-capsule.ts`).
-
-### Bucket List
-
-`app/bucket-list` sayfası birden fazla liste oluşturmayı destekler (kapak görseli, 6 renkten biri). Liste detayında maddeler HTML5 native drag-and-drop ile sürüklenip bırakılabilir (`bucket_items.position` güncellenir); "Tamamlananları alta taşı" anahtarı `localStorage`'da saklanan isteğe bağlı bir sıralama ayarıdır. Her liste kartı tamamlanma yüzdesi, progress bar, tamamlanan/kalan madde sayısını gösterir; ana sayfada küçük bir özet kartı bulunur.
-
-### Ortak Günlük
-
-`app/gunluk` sayfası zaman çizelgesi (timeline) görünümünde günlük kayıtlarını listeler. Her kayıt başlık, içerik, tarih, yazan kişi, 7 ruh halinden biri (`lib/journal/journal-catalog.ts`) ve isteğe bağlı hava durumu/fotoğraflar taşır. Arama çubuğu başlık/içerik/yazan/tarih alanlarında filtreleyebilir (`hooks/use-journal.ts`).
-
-### Time Capsule
-
-`app/zaman-kapsulu` sayfası kilitli kartlar halinde kapsülleri listeler; açılma tarihinden önce yalnızca başlık, tarih ve oluşturan kişi görünür. Açılma anı geldiğinde konfeti + kalpler + blur geçişli bir kutlama modalı (`CapsuleUnlockModal`, mevcut `NotificationAnimation` motoru yeniden kullanılır) açılır; kullanıcı "Şimdi Aç" veya "Daha Sonra" seçebilir. Ekler (fotoğraf/video/PDF) `capsules` private bucket'ında saklanır ve yalnızca açıldıktan sonra indirilebilir.
-
-### Profil ve İstatistikler
-
-`app/profil`, çift adı, ilişki başlangıç tarihinden hesaplanan gün sayacı ve dört istatistik kartı (paylaşılan anı, yazılan not, gönderilen etkileşim, tamamlanan bucket maddesi) gösterir (`lib/profile/queries.ts`).
-
-### Tema Sistemi
-
-`ThemeProvider` (`components/settings/theme-provider.tsx`) açık/koyu/sistem temasını yönetir: tercih `user_settings.theme`'de saklanır, `prefers-color-scheme` değişikliklerini dinler ve `<html>` üzerinde `dark` class'ını değiştirir (Tailwind `darkMode:["class"]` ile uyumlu). `app/layout.tsx` içindeki senkron script, hydration öncesi doğru temayı uygulayarak flaş (FOUC) oluşmasını engeller.
-
-**Kapsam notu**: Bu görevde eklenen tüm yeni modüller (Bucket List, Günlük, Time Capsule, Profil, Ayarlar) ve paylaşılan kabuk bileşenleri (`Card`, `AppHeader`, `BottomNavigation`, `globals.css`) tam karanlık tema desteğiyle yazıldı. Daha önceki promptlarda (Notlar, Anılar, Takvim, Geri Sayımlar, Bildirimler) sabit `slate-*`/`rose-*` renkleriyle yazılmış sayfalar bu görev kapsamında geriye dönük olarak karanlık temaya uyarlanmadı; bu sayfalar açık temada beklendiği gibi çalışmaya devam eder ama koyu modda ayrı bir geçiş gerektirir.
-
-### Ayarlar
-
-`app/ayarlar` tema seçici, bildirim/animasyon/titreşim anahtarları, dil seçici (TR/EN), 9 bildirim türü için ayrı aç/kapat listesi ve oturum kapatma bölümünü içerir. Tüm değişiklikler `useSettings` hook'u üzerinden anında kaydedilir ve başarı/hata durumları toast ile bildirilir (`components/ui/toast-provider.tsx`).
-
-### Global Arama
-
-Header'daki arama ikonu (`components/search/global-search-button.tsx`) Anılar, Notlar, Günlük, Bucket List ve Etkinlikler tablolarında paralel `ilike` sorguları çalıştırır (`services/search/global-search-service.ts`); sonuçlar kategoriye göre gruplanıp linklenir. RLS zaten çift kapsamını uyguladığı için sorgular ek bir yetkilendirme filtresi gerektirmez.
-
-### Navigasyon değişikliği
-
-Modül sayısı arttıkça alt navigasyon taşacağından, sabit 4 sekme (Ana Sayfa, Takvim, Anılar, Profil) + genişleyebilir bir "Diğer" bottom sheet'e geçildi (`components/navigation/more-menu-sheet.tsx`). Diğer menüsü Notlar, Ortak Günlük, Bucket List, Zaman Kapsülü, Geri Sayımlar, Bildirimler ve Ayarlar'ı listeler; yeni modüller buraya tek satırla eklenir.
-
-## Çalıştırma
-
-```bash
-npm run dev
-```
-
-Uygulama varsayılan olarak `http://localhost:3000` adresinde açılır. Mobil tarayıcıdan “Ana Ekrana Ekle” seçeneğiyle kurulabilir.
-
-## Production build
-
-```bash
-npm run build
-npm run start
-```
-
-Kod kalitesi kontrolleri:
-
-```bash
-npm run lint
-npm run format:check
-```
-
-## Production hazırlığı
-
-Uygulama private bir çift alanı olduğu için arama motorları `robots.ts` ile engellenir. Production deploy öncesi aşağıdaki komutların tamamı başarılı olmalıdır:
+Run the complete verification suite before publishing:
 
 ```bash
 npm run lint
 npm run typecheck
-npm run test
+npm test
 npm run build
 ```
 
-### PWA, offline ve güncellemeler
+Continuous integration runs the same core checks for every push and pull request.
 
-- Service worker; uygulama kabuğu ve statik varlıklarda **Cache First**, rota geçişlerinde **Network First**, görsel/Next image kaynaklarında **Stale While Revalidate** uygular.
-- Kullanıcı çevrimdışıyken son görüntülenen ekranlar cache'den gösterilir; hiç cache yoksa `/offline` ekranı açılır.
-- Yeni service worker beklemeye alındığında kullanıcıya “Güncelleme hazır” uyarısı verilir. Onaydan sonra uygulama güvenli biçimde yenilenir.
-- Çevrimdışıyken oluşturulan notlar cihazın IndexedDB kuyruğuna alınır ve bağlantı geldiğinde tekrar gönderilir. Service worker, destekleyen tarayıcılarda senkronizasyon isteğini açık istemciye iletir; Supabase oturum anahtarları service worker içinde saklanmaz.
-- Çıkışta private runtime ve görsel cache'leri temizlenir.
+### Production deployment
 
-### Güvenlik
+Build the application with `npm run build` and deploy it to any hosting platform that supports Next.js. Configure the public Supabase variables in the hosting environment, use HTTPS, and add the production domain to the allowed redirect URLs in Supabase Authentication settings.
 
-- Supabase RLS; tüm çift verilerini `couple_id` kapsamında izole eder. Storage bucket'ları private'tır.
-- Production header'ları CSP, HSTS, `nosniff`, frame engelleme, sıkı referrer ve izin politikalarını içerir.
-- Girdi doğrulaması tüm yazma servislerinde Zod ile yapılır; dosya türü/boyutu istemci ve Storage politikaları tarafından sınırlandırılır.
-- `lib/security/rate-limit.ts`, ileride Route Handler veya Server Action eklendiğinde bir Redis/Vercel KV adaptörüyle değiştirilebilecek bellek içi geliştirme katmanıdır. Çoklu Vercel instance'larında tek başına dağıtık rate limiting sağlamaz.
-- `lib/monitoring/logger.ts`, token/şifre/secret alanlarını loglardan ayıklayan Sentry uyumlu bir soyutlama sağlar.
+Never commit `.env.local`, service-role keys, demo passwords, or any other secret.
 
-### Test ve CI
+---
 
-Unit testler saf geri sayım hesaplarını, not doğrulamasını ve rate limit davranışını kapsar. GitHub Actions iş akışı her push ve pull request'te `npm ci`, lint, typecheck, test ve build çalıştırır: [ci.yml](/Users/furkan/Documents/AŞK/.github/workflows/ci.yml).
+## Türkçe
 
-## Vercel'e deploy
+### Genel Bakış
 
-1. Projeyi GitHub, GitLab veya Bitbucket'a gönderin.
-2. [Vercel](https://vercel.com/new) üzerinde depoyu içe aktarın.
-3. Vercel proje ayarlarında **Environment Variables** bölümüne `.env.local` içindeki dört değişkeni ekleyin.
-4. Supabase **Authentication > URL Configuration** ayarlarına Vercel production URL'nizi ekleyin.
-5. Framework olarak Next.js otomatik seçilir; **Deploy** seçeneğine basın.
+Bizim Hikâyemiz, iki kişi için geliştirilmiş mobil öncelikli bir Progressive Web App'tir. Her hesap, güvenli davet akışıyla oluşturulan özel bir çift alanına bağlanır. Anılar, notlar, planlar, etkileşimler ve profil bilgileri iki partner arasında gerçek zamanlı olarak senkronize edilir.
 
-## Mimari
+Uygulama, modern mobil deneyimi veritabanı ve depolama katmanlarında uygulanan güvenlik modeliyle birleştirir. Çift verileri Supabase Row Level Security politikalarıyla birbirinden ayrılır, medya dosyaları private bucket'larda saklanır ve erişim yalnızca aynı çiftin doğrulanmış üyeleriyle sınırlanır.
 
-- `app/`: App Router rotaları ve uygulama kabuğu
-- `components/`: Tek sorumluluklu, tekrar kullanılabilir arayüz bileşenleri
-- `lib/`: Yardımcı fonksiyonlar ve geçici mock veri
-- `types/`: Paylaşılan TypeScript modelleri
-- `public/`: PWA manifest, service worker, ikonlar ve statik varlıklar
-- `lib/supabase/`: Tarayıcı, sunucu ve middleware için ayrı Supabase istemcileri
-- `components/auth/`: Giriş, çıkış, profil ve istemci tarafı auth durum bileşenleri
-- `components/memories/`: Albüm oluşturma, fotoğraf yükleme ve anı kartları
-- `components/notes/`: Not kartları, bottom sheet formu ve not çalışma alanı
-- `components/notifications/`: Etkileşim kartı, bildirim geçmişi, detay modalı, animasyon motoru, zil ve global realtime dinleyici
-- `components/events/`: Takvim görünümleri (ay/hafta/liste), etkinlik formu ve detay modalı
-- `components/countdowns/`: Geri sayım kartları, canlı sayaç ve oluşturma formu
-- `components/bucket/`: Liste kartı/formu, madde satırı (drag-and-drop), liste detayı ve genel workspace
-- `components/journal/`: Zaman çizelgesi kartı, arama çubuğu, yazma formu ve detay modalı
-- `components/capsule/`: Kilitli kart, açılma kutlaması, içerik modalı ve oluşturma formu
-- `components/profile/`: Çift bilgisi kartı ve istatistik grid'i
-- `components/settings/`: Tema sağlayıcı/anahtarı, dil seçici, bildirim tercihleri ve genel toggle satırı
-- `components/search/`: Global arama butonu ve diyaloğu
-- `components/navigation/`: Alt navigasyon ve genişleyebilir "Diğer" bottom sheet
-- `hooks/`: `useNotifications`, `useEvents`, `useCountdowns`, `useBucketList`, `useJournal`, `useCapsule`, `useSettings`, `useNow` dahil tekrar kullanılabilir React hook'ları
-- `lib/notifications/`, `lib/events/`, `lib/countdowns/`, `lib/bucket/`, `lib/journal/`, `lib/capsule/`, `lib/settings/`, `lib/profile/`: Kataloglar, mapper'lar, tema/tarih hesaplamaları ve sunucu sorguları
-- `services/notes/`: Zod ile doğrulanan not yazma işlemleri
-- `services/notifications/`: Bildirim gönderimi, okundu/teslim işaretleme ve push sağlayıcı soyutlaması
-- `services/events/`, `services/countdowns/`: Zod ile doğrulanan etkinlik ve geri sayım yazma işlemleri
-- `services/bucket/`, `services/journal/`, `services/capsule/`, `services/settings/`: Zod ile doğrulanan yazma işlemleri ve dosya yükleme akışları
-- `services/search/`: Global arama sorgu servisi
-- `supabase/migrations/`: Şemayı, RLS'yi ve Storage politikalarını sürümlü biçimde oluşturan SQL migration'ları
+### Öne Çıkanlar
 
-### Migration adımları
+- **Güvenli çift eşleşmesi:** özel bir çift alanı oluşturun veya benzersiz davet koduyla partnerinize katılın.
+- **Ortak çift profili:** isimler, profil fotoğrafı, ilişki tarihi, otomatik gün sayacı, ortak hikâye, favoriler ve istatistikler.
+- **Anılar ve albümler:** özel fotoğrafları yükleyin, görüntüleyin, favorileyin, düzenleyin ve albümlerde organize edin.
+- **Notlar ve ortak günlük:** canlı güncellemeler ve çevrimdışı not kurtarma desteğiyle birlikte yazın.
+- **Takvim ve geri sayımlar:** özel tarihleri, tekrarlayan etkinlikleri, buluşmaları ve yaklaşan anları yönetin.
+- **Duygusal etkileşimler:** animasyon, titreşim, okunmamış durumu ve canlı teslimat desteğiyle etkileşim gönderin.
+- **Tarayıcı bildirimleri:** kullanıcı kontrollü izin akışı ve web etkileşimleri için hazır altyapı.
+- **Gizlilik odaklı mesafe:** ham koordinatları arayüzde göstermeden, isteğe bağlı ve pil dostu konum güncellemeleriyle partnerler arasındaki mesafe.
+- **Ortak hedefler ve zaman kapsülleri:** birlikte yapılacakları takip edin; mesaj ve ekleri belirlenen tarihe kadar kilitli tutun.
+- **Ruh hali ve hızlı durum:** partner odaklı görünürlük ve veritabanı seviyesinde yetkilendirmeyle anlık durum paylaşın.
+- **Kurulabilir PWA:** responsive arayüz, çevrimdışı ekran, güncelleme bildirimi ve ana ekrana ekleme desteği.
 
-Beş migration sıralı çalışır: çekirdek şema (`...140000`), notlar (`...150000`), bildirim/etkinlik/geri sayım (`...160000`), bucket list/günlük/time capsule/ayarlar (`...170000`) ve açık kayıt/davet kodu ile eşleşme (`...180000`).
+### Teknolojiler
 
-```bash
-npx supabase db push
+| Alan              | Teknoloji                                    |
+| ----------------- | -------------------------------------------- |
+| Uygulama          | Next.js 15, React 19, App Router             |
+| Dil               | TypeScript                                   |
+| Stil ve animasyon | Tailwind CSS, Framer Motion, Lucide Icons    |
+| Backend           | Supabase Auth, PostgreSQL, Storage, Realtime |
+| Doğrulama         | Zod                                          |
+| Test ve kalite    | Vitest, ESLint, TypeScript                   |
+| PWA               | Web App Manifest, Service Worker, IndexedDB  |
+
+### Mimari
+
+```text
+app/                  Rotalar, layout'lar, loading ve error sınırları
+components/           Özellik odaklı arayüz bileşenleri
+hooks/                İstemci durumu ve Realtime abonelikleri
+lib/                  Sorgular, doğrulama, dönüştürme ve domain araçları
+services/             Özellik servisleri ve yazma işlemleri
+supabase/migrations/  Şema, fonksiyonlar, trigger'lar ve RLS politikaları
+tests/unit/            Birim ve regresyon testleri
+public/                PWA dosyaları ve service worker
 ```
 
-Yeni migration ayrıca `journal-media` (10 MB, görsel) ve `capsules` (50 MB, görsel/video/PDF) private Storage bucket'larını ve bunların RLS politikalarını oluşturur.
+Arayüz bileşenleri veri değişikliklerini tipli servislere devreder, yeniden kullanılabilir hook'lar istemci durumunu ve filtrelenmiş Realtime kanallarını yönetir, veritabanı politikaları ise son yetkilendirme sınırını oluşturur.
 
-Yeni tabloların Realtime yayını migration içinde tanımlıdır; ek Dashboard ayarı gerekmez.
+### Gereksinimler
+
+- Node.js 20.9 veya daha yeni bir sürüm
+- npm
+- Bir Supabase projesi
+- Veritabanı migration'ları için Supabase CLI
+
+### Yerel Kurulum
+
+1. Bağımlılıkları kurun:
+
+   ```bash
+   npm install
+   ```
+
+2. Yerel ortam dosyasını oluşturun:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. Public Supabase bilgilerini ekleyin:
+
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
+   ```
+
+4. Veritabanını bağlayıp migration'ları uygulayın:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npx supabase db push
+   ```
+
+5. Supabase Authentication ayarlarından e-posta ile kaydı etkinleştirin ve izin verilen yönlendirme adreslerine `http://localhost:3000` ekleyin.
+
+6. Uygulamayı başlatın:
+
+   ```bash
+   npm run dev
+   ```
+
+Tarayıcınızdan `http://localhost:3000` adresini açın.
+
+### İsteğe Bağlı Demo Hesapları
+
+Yalnızca geliştirme ortamında kullanılan hızlı demo girişi `.env.local` içinde yapılandırılabilir. Bu hesapların Supabase'de oluşturulmuş ve bir çifte bağlı profil kayıtlarına sahip olması gerekir.
+
+```env
+DEV_DEMO_OWNER_EMAIL=
+DEV_DEMO_OWNER_PASSWORD=
+DEV_DEMO_PARTNER_EMAIL=
+DEV_DEMO_PARTNER_PASSWORD=
+```
+
+İzole demo verisini `npm run simulate` komutuyla oluşturabilir veya yenileyebilirsiniz. Demo giriş endpoint'i production ortamında kapalıdır ve parolalar tarayıcıya gönderilmez.
+
+### Komutlar
+
+| Komut                  | Açıklama                                     |
+| ---------------------- | -------------------------------------------- |
+| `npm run dev`          | Geliştirme sunucusunu başlatır               |
+| `npm run build`        | Optimize production build'ini oluşturur      |
+| `npm run start`        | Production build'ini çalıştırır              |
+| `npm run lint`         | Statik kod analizini çalıştırır              |
+| `npm run typecheck`    | TypeScript tiplerini kontrol eder            |
+| `npm test`             | Test paketini bir kez çalıştırır             |
+| `npm run test:watch`   | Testleri izleme modunda çalıştırır           |
+| `npm run format`       | Projeyi biçimlendirir                        |
+| `npm run format:check` | Dosyaları değiştirmeden biçimi kontrol eder  |
+| `npm run simulate`     | İzole demo verisini oluşturur veya günceller |
+
+### Güvenlik ve Gizlilik
+
+- Çifte ait tablolar Row Level Security ile korunur.
+- Okuma ve yazma işlemleri yalnızca aynı çiftteki doğrulanmış kullanıcılara açıktır.
+- Davet fonksiyonları üyeliği, çift kapasitesini ve yinelenen profilleri sunucu tarafında denetler.
+- Özel medya dosyaları çift ve kullanıcı kapsamındaki yollarda saklanır; kısa süreli signed URL ile açılır.
+- Konum paylaşımı isteğe bağlıdır; arayüz kesin koordinatlar yerine mesafe ve güncellik bilgisini gösterir.
+- Cinsiyet bilgisi yalnızca özellik yetkilendirmesi için kullanılır ve ortak görünümlerde yayımlanmaz.
+- Zaman kapsülü içeriğine açılma tarihinden önce erişilemez.
+- Production header'ları HTTPS, içerik kısıtlamaları, frame koruması, referrer politikası ve açık tarayıcı izinleri uygular.
+- Service worker, Supabase oturumunu veya gizli anahtarları saklamaz.
+
+> İstemci kontrolleri kullanıcı deneyimini iyileştirir; asıl erişim kontrolü veritabanı politikaları ve doğrulanan sunucu fonksiyonları tarafından uygulanır.
+
+### Kalite Kontrolleri
+
+Production build'ini yayımlamadan önce eksiksiz doğrulama paketini çalıştırın:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Sürekli entegrasyon, her push ve pull request için aynı temel kontrolleri çalıştırır.
+
+### Production Dağıtımı
+
+Uygulamayı `npm run build` komutuyla derleyin ve Next.js destekleyen herhangi bir barındırma platformunda yayımlayın. Public Supabase ortam değişkenlerini barındırma ortamına ekleyin, HTTPS kullanın ve production alan adını Supabase Authentication içindeki izin verilen yönlendirme adreslerine tanımlayın.
+
+`.env.local`, service-role anahtarları, demo parolaları veya başka bir gizli bilgiyi Git deposuna eklemeyin.
+
+---
+
+Built with care for shared moments. · Ortak anlar için özenle geliştirildi.
