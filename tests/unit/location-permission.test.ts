@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  classifyGeolocationFailure,
   getLocationPermission,
   getLocationRuntime,
   mapGeolocationErrorCode,
@@ -17,6 +18,24 @@ describe("location permission service", () => {
     expect(mapGeolocationErrorCode(1)).toBe("permission_denied");
     expect(mapGeolocationErrorCode(2)).toBe("position_unavailable");
     expect(mapGeolocationErrorCode(3)).toBe("timeout");
+  });
+
+  it("does not overwrite granted permission with a conflicting code 1 error", () => {
+    expect(classifyGeolocationFailure(1, "granted", "granted")).toBe(
+      "position_unavailable",
+    );
+    expect(classifyGeolocationFailure(1, "granted", "unknown")).toBe(
+      "position_unavailable",
+    );
+  });
+
+  it("keeps a confirmed denial as permission denied", () => {
+    expect(classifyGeolocationFailure(1, "prompt", "denied")).toBe(
+      "permission_denied",
+    );
+    expect(classifyGeolocationFailure(1, "granted", "denied")).toBe(
+      "permission_denied",
+    );
   });
 
   it("returns unknown instead of denied when Permissions API is unavailable", async () => {

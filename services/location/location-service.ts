@@ -42,6 +42,21 @@ export function mapGeolocationErrorCode(code: number): LocationFailure {
   return "position_unavailable";
 }
 
+export function classifyGeolocationFailure(
+  errorCode: number,
+  permissionBefore: LocationPermissionState,
+  permissionAfter: LocationPermissionState,
+): LocationFailure {
+  if (errorCode !== 1) return mapGeolocationErrorCode(errorCode);
+  if (permissionAfter === "denied") return "permission_denied";
+  if (
+    permissionAfter === "granted" ||
+    (permissionAfter === "unknown" && permissionBefore === "granted")
+  )
+    return "position_unavailable";
+  return "permission_denied";
+}
+
 export function locationFailureMessage(failure: LocationFailure): string {
   switch (failure) {
     case "permission_denied":
@@ -122,7 +137,9 @@ export function observeLocationPermission(
   };
 }
 
-function acquirePosition(): Promise<GeolocationPosition> {
+function acquirePosition(
+  permissionBefore: LocationPermissionState,
+): Promise<GeolocationPosition> {
   if (!("geolocation" in navigator))
     return Promise.reject(
       new LocationServiceError(
@@ -133,13 +150,20 @@ function acquirePosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       resolve,
-      (error) => {
-        const code = mapGeolocationErrorCode(error.code);
+      async (error) => {
+        const permissionAfter = await getLocationPermission();
+        const code = classifyGeolocationFailure(
+          error.code,
+          permissionBefore,
+          permissionAfter,
+        );
         if (process.env.NODE_ENV === "development")
           console.debug("[location] geolocation failure", {
             platform: getLocationClientPlatform(),
             errorCode: error.code,
             failure: code,
+            permissionBefore,
+            permissionAfter,
           });
         reject(new LocationServiceError(code, error.message));
       },
@@ -188,7 +212,7 @@ export async function updateCurrentLocation(
       )
         return existing;
     }
-    const position = await acquirePosition();
+    const position = await acquirePosition(permission);
     const movement =
       existing?.latitude !== null &&
       existing?.longitude !== null &&

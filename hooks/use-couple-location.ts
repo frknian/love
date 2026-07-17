@@ -99,13 +99,19 @@ export function useCoupleLocation({
         await load();
         updatePermission("granted");
       } catch (updateError) {
-        const nextFailure: LocationFailure =
+        const reportedFailure: LocationFailure =
           updateError instanceof LocationServiceError
             ? updateError.code
             : "save_failed";
+        const permissionAfter = await getLocationPermission();
+        const nextFailure: LocationFailure =
+          reportedFailure === "permission_denied" &&
+          permissionAfter === "granted"
+            ? "position_unavailable"
+            : reportedFailure;
         setFailure(nextFailure);
         if (nextFailure === "permission_denied") updatePermission("denied");
-        else updatePermission(await getLocationPermission());
+        else updatePermission(permissionAfter);
       } finally {
         setIsUpdating(false);
       }
