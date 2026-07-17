@@ -2,6 +2,11 @@ import { cache } from "react";
 
 import { toAppNotification } from "@/lib/notifications/notification-mapper";
 import { createClient } from "@/lib/supabase/server";
+import {
+  coupleAnniversary,
+  getAuthUser,
+  getCoupleMembers,
+} from "@/lib/supabase/session";
 import type {
   AppNotification,
   EngagementContext,
@@ -10,34 +15,19 @@ import type {
 
 /**
  * Oturumdaki kullanıcıyı, çiftini ve partner profilini tek seferde çözer.
- * Bildirim gönderimi için partner kimliği zorunludur.
+ * Bildirim gönderimi için partner kimliği zorunludur. Veriler istek başına
+ * önbellekli oturum yardımcılarından gelir; bu fonksiyon layout/PageShell
+ * ile aynı sorguları paylaşır ve ek ağ isteği yapmaz.
  */
 export const getEngagementContext = cache(
   async function getEngagementContext(): Promise<EngagementContext | null> {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthUser();
     if (!user) return null;
 
-    const { data: me, error: memberError } = await supabase
-      .from("profiles")
-      .select("id, couple_id, display_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (memberError || !me) return null;
-
-    const { data: partner } = await supabase
-      .from("profiles")
-      .select("id, couple_id, display_name")
-      .eq("couple_id", me.couple_id)
-      .neq("id", user.id)
-      .maybeSingle();
-    const { data: couple } = await supabase
-      .from("couples")
-      .select("anniversary_date")
-      .eq("id", me.couple_id)
-      .maybeSingle<{ anniversary_date: string | null }>();
+    const members = await getCoupleMembers();
+    const me = members.find((member) => member.id === user.id);
+    if (!me) return null;
+    const partner = members.find((member) => member.id !== user.id) ?? null;
 
     return {
       userId: user.id,
@@ -45,7 +35,7 @@ export const getEngagementContext = cache(
       displayName: me.display_name,
       partnerId: partner?.id ?? null,
       partnerName: partner?.display_name ?? null,
-      relationshipStartDate: couple?.anniversary_date ?? null,
+      relationshipStartDate: coupleAnniversary(me),
     };
   },
 );

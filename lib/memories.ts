@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser, getCoupleMembers } from "@/lib/supabase/session";
 import type { Album, MemoriesContext, Memory } from "@/types/memories";
 
 function toAlbum(record: {
@@ -18,18 +19,12 @@ function toAlbum(record: {
 }
 
 export async function getMemoriesContext(): Promise<MemoriesContext | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("couple_id")
-    .eq("id", user.id)
-    .maybeSingle();
-  return data ? { userId: user.id, coupleId: data.couple_id } : null;
+  const members = await getCoupleMembers();
+  const me = members.find((member) => member.id === user.id);
+  return me ? { userId: user.id, coupleId: me.couple_id } : null;
 }
 
 export async function getAlbums(): Promise<Album[]> {

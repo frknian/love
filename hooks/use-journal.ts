@@ -89,7 +89,12 @@ export function useJournal({
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "journals" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "journals",
+          filter: `couple_id=eq.${coupleId}`,
+        },
         handleChange,
       )
       .subscribe((status) => {

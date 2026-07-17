@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { toUserSettings } from "@/lib/settings/settings-mapper";
 import { createClient } from "@/lib/supabase/server";
 import { defaultUserSettings } from "@/types/settings";
@@ -21,7 +23,7 @@ function fallbackSettings(userId: string): UserSettings {
  * uygulanmamışsa) tema/ayarlar sayfası dışındaki tüm uygulamanın
  * çökmemesi için sorgu hatalarında varsayılan ayarlara geri döner.
  */
-export async function getOrCreateUserSettings(
+export const getOrCreateUserSettings = cache(async function getOrCreateUserSettings(
   userId: string,
 ): Promise<UserSettings> {
   const supabase = await createClient();
@@ -52,4 +54,4 @@ export async function getOrCreateUserSettings(
     return fallbackSettings(userId);
   }
   return toUserSettings(created as UserSettingsRow);
-}
+});
