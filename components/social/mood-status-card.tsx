@@ -221,6 +221,27 @@ export function MoodStatusCard({
     }
   }
 
+  async function callPartnerFromActivePeriodCard() {
+    if (Date.now() < cooldownUntil || isSaving) return;
+    setIsSaving(true);
+    try {
+      await notifyPartner(
+        "partner_call",
+        `${currentUserName} seni çağırıyor ❤️`,
+        "Müsait olduğunda onunla konuşur musun?",
+        "❤️",
+      );
+      const nextCooldown = Date.now() + QUICK_COOLDOWN_MS;
+      setCooldownUntil(nextCooldown);
+      window.setTimeout(() => setCooldownUntil(0), QUICK_COOLDOWN_MS);
+      showToast(`${partnerName} haberdar edildi.`);
+    } catch {
+      showToast("Çağrı gönderilemedi.", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function sendHunger() {
     setIsSaving(true);
     try {
@@ -567,6 +588,14 @@ export function MoodStatusCard({
                     “{status.details}”
                   </p>
                 ) : null}
+                <button
+                  className="mt-2 min-h-9 w-full rounded-lg bg-pink-500 px-3 text-xs font-semibold text-white disabled:opacity-50"
+                  disabled={isSaving || Date.now() < cooldownUntil}
+                  onClick={() => void callPartnerFromActivePeriodCard()}
+                  type="button"
+                >
+                  {partnerCallLabel(partnerName)}
+                </button>
               </div>
             ) : (
               <p

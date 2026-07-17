@@ -79,6 +79,7 @@ describe("Sprint 2 social helpers", () => {
     );
     expect(component).toContain("🌸 Regl Modu Aktif");
     expect(component).toContain("status.details");
+    expect(component).toContain("callPartnerFromActivePeriodCard");
   });
 
   it("moves forward and backward in the story viewer", () => {
