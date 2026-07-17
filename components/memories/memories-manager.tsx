@@ -99,16 +99,27 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
   }
 
   async function startRecording() {
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setError("Bu tarayıcıda ses kaydı desteklenmiyor.");
+    if (!window.isSecureContext) {
+      setError("Ses kaydı için siteyi HTTPS bağlantısıyla açmalısın.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Bu tarayıcı mikrofon erişimini desteklemiyor.");
       return;
     }
     setError(undefined);
     clearRecordedAudio();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!window.MediaRecorder) {
+        stream.getTracks().forEach((track) => track.stop());
+        setError("Bu tarayıcı ses kaydı oluşturmayı desteklemiyor.");
+        return;
+      }
       const mimeType = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
-        (type) => MediaRecorder.isTypeSupported(type),
+        (type) =>
+          typeof MediaRecorder.isTypeSupported !== "function" ||
+          MediaRecorder.isTypeSupported(type),
       );
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
@@ -138,10 +149,16 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       recorder.start();
       setRecordingSeconds(0);
       setIsRecording(true);
-    } catch {
+    } catch (recordingError) {
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
       recordingStreamRef.current = null;
-      setError("Mikrofon izni alınamadı. Tarayıcı ayarlarından izin verip tekrar dene.");
+      const errorName =
+        recordingError instanceof DOMException ? recordingError.name : "";
+      setError(
+        errorName === "NotAllowedError" || errorName === "PermissionDeniedError"
+          ? "Mikrofon izni verilmedi. Adres çubuğundaki kilit simgesinden mikrofon iznini açıp tekrar dene."
+          : "Mikrofon açılamadı. Tarayıcı ayarlarından mikrofon iznini kontrol edip tekrar dene.",
+      );
     }
   }
 
