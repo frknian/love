@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { RealtimeNotificationListener } from "@/components/notifications/realtime-notification-listener";
+import { NotificationPermissionCard } from "@/components/notifications/notification-permission-card";
 import { getEngagementContext } from "@/lib/notifications/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 
@@ -29,6 +30,7 @@ export async function PageShell({ children }: PageShellProps) {
       <AppHeader currentUserId={engagement?.userId} user={user} />
       {children}
       <BottomNavigation />
+      <NotificationPermissionCard />
       {engagement ? (
         <RealtimeNotificationListener
           coupleId={engagement.coupleId}

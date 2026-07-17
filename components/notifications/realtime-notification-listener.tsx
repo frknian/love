@@ -8,6 +8,7 @@ import { triggerHapticForType } from "@/lib/notifications/haptics";
 import { toAppNotification } from "@/lib/notifications/notification-mapper";
 import { createClient } from "@/lib/supabase/client";
 import { notificationsService } from "@/services/notifications/notifications-service";
+import { getPushProvider } from "@/services/notifications/push-provider";
 import type { AppNotification, NotificationRow } from "@/types/notifications";
 
 interface RealtimeNotificationListenerProps {
@@ -39,6 +40,13 @@ export function RealtimeNotificationListener({
         return;
       triggerHapticForType(row.notification_type);
       void notificationsService.markAsDelivered(row.id).catch(() => undefined);
+      void getPushProvider()
+        .notify({
+          title: `${row.icon} ${row.title}`,
+          body: row.message,
+          tag: `interaction:${row.id}`,
+        })
+        .catch(() => undefined);
       setIncoming(toAppNotification(row, partnerName));
     }
 

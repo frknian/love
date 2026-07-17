@@ -3,6 +3,7 @@ import { CountdownStrip } from "@/components/home/countdown-strip";
 import { LatestCountdownCard } from "@/components/home/latest-countdown-card";
 import { LatestInteractionCard } from "@/components/home/latest-interaction-card";
 import { LatestJournalCard } from "@/components/home/latest-journal-card";
+import { LocationDistanceCard } from "@/components/location/location-distance-card";
 import { StatCard } from "@/components/home/stat-card";
 import { UpcomingCapsuleCard } from "@/components/home/upcoming-capsule-card";
 import { UpcomingEventsCard } from "@/components/home/upcoming-events-card";
@@ -103,6 +104,13 @@ export default async function HomePage() {
           <InteractionUnavailableCard />
         ) : null}
         <CountdownStrip countdowns={nearestCountdowns} />
+        {context ? (
+          <LocationDistanceCard
+            coupleId={context.coupleId}
+            currentUserId={context.userId}
+            partnerId={context.partnerId}
+          />
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <UpcomingEventsCard occurrences={upcomingOccurrences} />
           {context ? (

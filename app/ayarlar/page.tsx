@@ -6,10 +6,11 @@ import { SettingsWorkspace } from "@/components/settings/settings-workspace";
 import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
 import { createClient } from "@/lib/supabase/server";
+import { getEngagementContext } from "@/lib/notifications/queries";
 
 export default async function SettingsPage() {
   const user = await getCurrentAppUser();
-  const [settings, inviteCode] = await Promise.all([
+  const [settings, inviteCode, engagement] = await Promise.all([
     user ? getOrCreateUserSettings(user.id) : Promise.resolve(null),
     user?.coupleId && user.role === "owner"
       ? (async () => {
@@ -22,6 +23,7 @@ export default async function SettingsPage() {
           return data?.invite_code;
         })()
       : Promise.resolve(undefined),
+    getEngagementContext(),
   ]);
 
   return (
@@ -51,6 +53,8 @@ export default async function SettingsPage() {
           <SettingsWorkspace
             initialSettings={settings}
             inviteCode={inviteCode ?? undefined}
+            coupleId={engagement?.coupleId ?? user.coupleId ?? ""}
+            partnerId={engagement?.partnerId ?? null}
             userId={user.id}
           />
         ) : null}

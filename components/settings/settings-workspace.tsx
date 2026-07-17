@@ -6,6 +6,8 @@ import { useState } from "react";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NotificationPreferencesCard } from "@/components/settings/notification-preferences-card";
+import { NotificationPermissionSettingsCard } from "@/components/notifications/notification-permission-settings-card";
+import { LocationSettingsCard } from "@/components/location/location-settings-card";
 import { ThemeSwitcher } from "@/components/settings/theme-switcher";
 import { ToggleRow } from "@/components/settings/toggle-row";
 import { InstallAppCard } from "@/components/pwa/install-app-card";
@@ -17,12 +19,16 @@ import type { NotificationPreferenceKey, UserSettings } from "@/types/settings";
 interface SettingsWorkspaceProps {
   initialSettings: UserSettings;
   inviteCode?: string;
+  coupleId: string;
+  partnerId: string | null;
   userId: string;
 }
 
 export function SettingsWorkspace({
   initialSettings,
   inviteCode,
+  coupleId,
+  partnerId,
   userId,
 }: SettingsWorkspaceProps) {
   const { settings, update, isSaving } = useSettings({
@@ -163,6 +169,16 @@ export function SettingsWorkspace({
         onChange={handleNotificationPreferenceChange}
         preferences={settings.notificationPreferences}
       />
+
+      <NotificationPermissionSettingsCard />
+
+      {coupleId ? (
+        <LocationSettingsCard
+          coupleId={coupleId}
+          currentUserId={userId}
+          partnerId={partnerId}
+        />
+      ) : null}
 
       {inviteCode ? (
         <Card className="w-full overflow-hidden">

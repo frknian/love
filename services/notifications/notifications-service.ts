@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { getInteraction } from "@/lib/notifications/interactions";
 import { createClient } from "@/lib/supabase/client";
-import { getPushProvider } from "@/services/notifications/push-provider";
 import type { NotificationRow } from "@/types/notifications";
 
 const sendNotificationSchema = z.object({
@@ -61,17 +60,6 @@ export const notificationsService = {
       .select(notificationColumns)
       .single();
     if (error) throw new Error("Bildirim gönderilemedi.");
-
-    // Push katmanı şimdilik no-op; gerçek sağlayıcı eklendiğinde
-    // gönderim akışı değişmeden cihaz bildirimine dönüşür.
-    void getPushProvider()
-      .notify({
-        title: payload.title,
-        body: payload.message,
-        icon: payload.icon,
-        tag: payload.type,
-      })
-      .catch(() => undefined);
 
     return data as NotificationRow;
   },
