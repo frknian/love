@@ -21,6 +21,15 @@ export function BucketProgressCard({ list }: BucketProgressCardProps) {
           <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
             {list.title}
           </p>
+          {list.latestItemTitle ? (
+            <p className="mt-2 truncate text-xs text-slate-500 dark:text-slate-400">
+              {list.latestItemCompleted ? "✓" : "○"} {list.latestItemTitle}
+              {list.latestItemListTitle &&
+              list.latestItemListTitle !== list.title
+                ? ` · ${list.latestItemListTitle}`
+                : null}
+            </p>
+          ) : null}
           <div
             aria-valuemax={100}
             aria-valuemin={0}

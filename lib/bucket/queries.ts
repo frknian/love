@@ -39,27 +39,49 @@ export async function getBucketItems(): Promise<BucketItem[]> {
 }
 
 interface HomeBucketListRow extends BucketListRow {
-  bucket_items: { completed: boolean }[] | null;
+  bucket_items:
+    | {
+        title: string;
+        completed: boolean;
+        created_at: string;
+      }[]
+    | null;
 }
 
-/** Ana ekran için iki tabloyu ayrı ayrı indirmek yerine ilk listeyi tek sorguda özetler. */
+/**
+ * Ana ekran için listeleri ve isteklerini tek Supabase sorgusunda özetler.
+ * Son eklenen istek tüm listelerden seçilir; böylece yeni madde eski bir
+ * listeye eklense bile ana ekranda görünür.
+ */
 export async function getHomeBucketProgress(): Promise<BucketListWithProgress | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bucket_lists")
     .select(
-      "id, couple_id, title, description, cover_image, color, created_by, created_at, bucket_items(completed)",
+      "id, couple_id, title, description, cover_image, color, created_by, created_at, bucket_items(title, completed, created_at)",
     )
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
   if (error) throw new Error("Liste özeti yüklenemedi.");
-  if (!data) return null;
+  const rows = (data ?? []) as unknown as HomeBucketListRow[];
+  if (!rows.length) return null;
 
-  const row = data as unknown as HomeBucketListRow;
+  const row = rows[0];
   const items = row.bucket_items ?? [];
   const totalItems = items.length;
   const completedItems = items.filter((item) => item.completed).length;
+  const latestItem = rows
+    .flatMap((listRow) =>
+      (listRow.bucket_items ?? []).map((item) => ({
+        ...item,
+        listTitle: listRow.title,
+      })),
+    )
+    .sort(
+      (first, second) =>
+        new Date(second.created_at).getTime() -
+        new Date(first.created_at).getTime(),
+    )[0];
+
   return {
     ...toBucketList(row),
     totalItems,
@@ -67,5 +89,8 @@ export async function getHomeBucketProgress(): Promise<BucketListWithProgress | 
     progressPercent: totalItems
       ? Math.round((completedItems / totalItems) * 100)
       : 0,
+    latestItemTitle: latestItem?.title ?? null,
+    latestItemCompleted: latestItem?.completed ?? null,
+    latestItemListTitle: latestItem?.listTitle ?? null,
   };
 }

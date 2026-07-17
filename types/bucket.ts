@@ -68,6 +68,10 @@ export interface BucketListWithProgress extends BucketList {
   totalItems: number;
   completedItems: number;
   progressPercent: number;
+  /** Ana ekran özetinde gösterilecek en son eklenen istek. */
+  latestItemTitle?: string | null;
+  latestItemCompleted?: boolean | null;
+  latestItemListTitle?: string | null;
 }
 
 export interface BucketContext {
