@@ -16,17 +16,16 @@ export interface CoupleMemberRow {
 }
 
 /**
- * İstek başına tek Supabase Auth doğrulaması. `auth.getUser()` her çağrıda
- * Supabase'e ağ isteği attığı için layout, PageShell ve sayfaların hepsinin
- * ayrı ayrı çağırması gezinmeleri ciddi biçimde yavaşlatıyordu; `cache`
- * sayesinde istek başına yalnızca bir kez çalışır.
+ * JWT imzasını Supabase'in JWKS anahtarlarıyla doğrular. Yeni projelerdeki
+ * asimetrik anahtarlar sayesinde JWKS süreç içinde önbelleklenir ve her sayfa
+ * isteğinde Auth sunucusuna ayrı bir ağ turu yapılmaz. `cache` aynı render
+ * içindeki tüm tüketicilerin tek doğrulama sonucunu paylaşmasını sağlar.
  */
 export const getAuthUser = cache(async function getAuthUser() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims.sub || !data.claims.email) return null;
+  return { id: data.claims.sub, email: data.claims.email };
 });
 
 /**
