@@ -30,7 +30,6 @@ export function PwaPermissionGate() {
   const [notificationState, setNotificationState] = useState<
     NotificationPermission | "unsupported"
   >("unsupported");
-  const [pushSupported, setPushSupported] = useState(false);
   const notificationStateRef = useRef<NotificationPermission | "unsupported">(
     "unsupported",
   );
@@ -57,7 +56,6 @@ export function PwaPermissionGate() {
     const locationPromise = requestLocationPermission();
     const provider = getPushProvider();
     const notificationPromise =
-      pushSupported &&
       typeof Notification !== "undefined" &&
       Notification.permission === "default"
         ? provider.requestPermission().catch(() => false)
@@ -86,7 +84,7 @@ export function PwaPermissionGate() {
         }
       },
     );
-  }, [pushSupported, refreshVisibility]);
+  }, [refreshVisibility]);
 
   useEffect(() => {
     let active = true;
@@ -109,7 +107,6 @@ export function PwaPermissionGate() {
       const supported = state.availability === "supported";
       setNotificationState(nextNotification);
       notificationStateRef.current = nextNotification;
-      setPushSupported(supported);
 
       if (supported && nextNotification === "default") {
         // Bazı tarayıcılar sayfa açılışında isteği engeller. Mevcut bildirim
