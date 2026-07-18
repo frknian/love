@@ -3,6 +3,10 @@
 import { BellRing, LoaderCircle, MapPin } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  WEB_PUSH_AUTO_REQUEST_KEY,
+  claimBrowserPermissionPrompt,
+} from "@/lib/notifications/permission-prompt";
 import { getPushProvider } from "@/services/notifications/push-provider";
 
 type LocationGateState = "unknown" | "granted" | "denied" | "unsupported";
@@ -108,7 +112,11 @@ export function PwaPermissionGate() {
       setNotificationState(nextNotification);
       notificationStateRef.current = nextNotification;
 
-      if (supported && nextNotification === "default") {
+      if (
+        supported &&
+        nextNotification === "default" &&
+        claimBrowserPermissionPrompt(WEB_PUSH_AUTO_REQUEST_KEY)
+      ) {
         // Bazı tarayıcılar sayfa açılışında isteği engeller. Mevcut bildirim
         // kartı bu durumda gerçek kullanıcı dokunuşuyla tekrar dener.
         void provider

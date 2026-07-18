@@ -3,6 +3,12 @@
 import { BellRing, LoaderCircle, Share, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import {
+  WEB_PUSH_CARD_SHOWN_KEY,
+  browserPermissionFlagIsSet,
+  claimBrowserPermissionPrompt,
+  setBrowserPermissionFlag,
+} from "@/lib/notifications/permission-prompt";
 import { getPushProvider } from "@/services/notifications/push-provider";
 import type { PushClientState } from "@/types/push";
 
@@ -29,7 +35,9 @@ export function NotificationPermissionCard() {
           nextState.permission !== "denied" &&
           !nextState.subscribed);
       setIsVisible(
-        needsAction && localStorage.getItem(DISMISSED_KEY) !== "true",
+        needsAction &&
+          !browserPermissionFlagIsSet(DISMISSED_KEY) &&
+          claimBrowserPermissionPrompt(WEB_PUSH_CARD_SHOWN_KEY),
       );
     });
     return () => {
@@ -59,7 +67,7 @@ export function NotificationPermissionCard() {
   }
 
   function handleDismiss() {
-    localStorage.setItem(DISMISSED_KEY, "true");
+    setBrowserPermissionFlag(DISMISSED_KEY);
     setIsVisible(false);
   }
 
