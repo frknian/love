@@ -7,6 +7,7 @@ import {
   DeferredRealtimeNotifications,
 } from "@/components/layout/deferred-page-runtime";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
+import { PwaPermissionGate } from "@/components/providers/pwa-permission-gate";
 import { getEngagementContext } from "@/lib/notifications/queries";
 import { getOrCreateUserSettings } from "@/lib/settings/queries";
 import { getCurrentAppUser } from "@/lib/supabase/get-current-user";
@@ -57,6 +58,7 @@ export async function PageShell({ children }: PageShellProps) {
       <AppHeader currentUserId={engagement?.userId} user={user} />
       {children}
       <BottomNavigation />
+      <PwaPermissionGate />
       <DeferredNotificationPermission />
       {engagement ? (
         <Suspense fallback={null}>
