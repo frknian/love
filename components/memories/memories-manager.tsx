@@ -57,6 +57,44 @@ function createObjectPath(context: MemoriesContext, file: File) {
   return `${context.coupleId}/${context.userId}/${crypto.randomUUID()}.${extension}`;
 }
 
+async function uploadMemoryMedia(
+  file: File,
+  context: MemoriesContext,
+  supabase: ReturnType<typeof createClient>,
+) {
+  const r2Response = await fetch("/api/storage/r2/presign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contentType: file.type,
+      fileName: file.name,
+      size: file.size,
+    }),
+  });
+  if (r2Response.ok) {
+    const { uploadUrl, path } = (await r2Response.json()) as {
+      uploadUrl: string;
+      path: string;
+    };
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!uploadResponse.ok) throw new Error("R2 upload failed");
+    return path;
+  }
+  if (r2Response.status !== 503) throw new Error("R2 upload authorization failed");
+
+  const path = createObjectPath(context, file);
+  const { error } = await supabase.storage.from("memories").upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
 export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
   const router = useRouter();
   const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
@@ -238,14 +276,9 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     const supabase = createClient();
     let mediaPath: string | null = null;
     if (selectedFile && selectedFile.size > 0) {
-      mediaPath = createObjectPath(context, selectedFile);
-      const { error: uploadError } = await supabase.storage
-        .from("memories")
-        .upload(mediaPath, selectedFile, {
-          contentType: selectedFile.type,
-          upsert: false,
-        });
-      if (uploadError) {
+      try {
+        mediaPath = await uploadMemoryMedia(selectedFile, context, supabase);
+      } catch {
         setError("Medya yüklenemedi. Bağlantını kontrol edip tekrar dene.");
         setIsUploading(false);
         return;
@@ -266,8 +299,12 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       memory_date: String(formData.get("memory-date") ?? "") || null,
     });
     if (insertError) {
-      if (mediaPath)
+      if (mediaPath?.startsWith("r2:")) {
+        // R2 nesnesi için silme endpoint'i sonraki migration adımında eklenecek;
+        // DB insert başarısız olursa nesne lifecycle temizliği yapılabilir.
+      } else if (mediaPath) {
         await supabase.storage.from("memories").remove([mediaPath]);
+      }
       setError("Anı kaydedilemedi. Medya yüklemesi geri alındı.");
       setIsUploading(false);
       return;

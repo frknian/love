@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getCoupleMembers } from "@/lib/supabase/session";
+import {
+  createR2DownloadUrl,
+  fromR2Path,
+  isR2Path,
+} from "@/lib/r2/client";
 import type { Album, MemoriesContext, Memory } from "@/types/memories";
 import type {
   MemoryHighlightItemRow,
@@ -65,16 +70,23 @@ export async function getMemories(): Promise<Memory[]> {
   const mediaPaths = records
     .map((record) => record.image_url)
     .filter((path): path is string => Boolean(path));
-  const { data: signedUrls } = mediaPaths.length
+  const supabaseMediaPaths = mediaPaths.filter((path) => !isR2Path(path));
+  const r2MediaPaths = mediaPaths.filter(isR2Path);
+  const [{ data: signedUrls }, r2SignedUrls] = await Promise.all([
+    supabaseMediaPaths.length
     ? await supabase.storage
         .from("memories")
-        .createSignedUrls(mediaPaths, 60 * 60)
-    : { data: [] };
+        .createSignedUrls(supabaseMediaPaths, 60 * 60)
+    : Promise.resolve({ data: [] }),
+    Promise.all(
+      r2MediaPaths.map(async (path) => [path, await createR2DownloadUrl(fromR2Path(path))] as const),
+    ),
+  ]);
   const signedUrlByPath = new Map(
-    (signedUrls ?? []).map((signedUrl) => [
+    [...(signedUrls ?? []).map((signedUrl) => [
       signedUrl.path,
       signedUrl.signedUrl ?? "",
-    ]),
+    ] as const), ...r2SignedUrls],
   );
 
   return records.map((record) => ({
