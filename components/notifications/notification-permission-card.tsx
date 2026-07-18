@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 import { getPushProvider } from "@/services/notifications/push-provider";
 import type { PushClientState } from "@/types/push";
 
-const DISMISSED_KEY = "love:web-push-permission-dismissed:v2";
+// Permission flow was updated for all browsers. A new key makes the updated
+// prompt visible again for users who dismissed the previous version.
+const DISMISSED_KEY = "love:web-push-permission-dismissed:v3";
 
 export function NotificationPermissionCard() {
   const [state, setState] = useState<PushClientState>();
