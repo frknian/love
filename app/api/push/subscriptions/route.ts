@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 const subscriptionSchema = z.object({
   endpoint: z.string().url().max(4096),
-  expirationTime: z.number().int().nonnegative().nullable(),
+  // PushSubscriptionJSON bunu tarayıcıya göre göndermeyebilir.
+  expirationTime: z.number().int().nonnegative().nullable().optional(),
   keys: z.object({
     p256dh: z.string().min(20).max(512),
     auth: z.string().min(8).max(256),
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     {
       user_id: user.id,
       endpoint: parsed.data.endpoint,
-      expiration_time: parsed.data.expirationTime,
+      expiration_time: parsed.data.expirationTime ?? null,
       p256dh: parsed.data.keys.p256dh,
       auth: parsed.data.keys.auth,
       updated_at: new Date().toISOString(),
