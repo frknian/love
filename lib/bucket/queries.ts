@@ -67,10 +67,13 @@ export async function getHomeBucketProgress(): Promise<BucketListWithProgress | 
   const { data, error } = await supabase
     .from("bucket_lists")
     .select(
-      "id, couple_id, title, description, cover_image, color, created_by, created_at, bucket_items(title, completed, created_at)",
+      "id, couple_id, title, description, cover_image, color, created_by, created_at, bucket_items!bucket_items_bucket_list_id_fkey(title, completed, created_at)",
     )
     .order("created_at", { ascending: false });
-  if (error) throw new Error("Liste özeti yüklenemedi.");
+  if (error) {
+    console.error("[bucket] home summary query failed", { code: error.code });
+    throw new Error("Liste özeti yüklenemedi.");
+  }
   const rows = (data ?? []) as unknown as HomeBucketListRow[];
   if (!rows.length) return null;
 
