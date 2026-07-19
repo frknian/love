@@ -9,7 +9,7 @@ export interface Album {
 
 export interface Memory {
   id: string;
-  albumId: string;
+  albumId: string | null;
   coupleId: string;
   uploadedBy: string;
   imagePath: string | null;

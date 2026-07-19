@@ -52,10 +52,19 @@ export async function PageShell({ children }: PageShellProps) {
 
   // Ayarlar, ilk HTML ve sayfa içeriğini engellememesi için arka planda akar.
   const settingsPromise = getOrCreateUserSettings(user.id);
+  const coupleNames = engagement
+    ? [engagement.displayName, engagement.partnerName]
+        .filter(Boolean)
+        .join(" 🤍 ")
+    : user.name;
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-4 pb-28 pt-6 sm:px-6 sm:pt-10">
-      <AppHeader currentUserId={engagement?.userId} user={user} />
+      <AppHeader
+        coupleNames={coupleNames}
+        currentUserId={engagement?.userId}
+        user={user}
+      />
       {children}
       <BottomNavigation />
       <PwaPermissionGate />

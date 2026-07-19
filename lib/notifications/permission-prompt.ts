@@ -2,6 +2,8 @@ export const WEB_PUSH_AUTO_REQUEST_KEY =
   "love:web-push-auto-requested:first-entry:v1";
 export const WEB_PUSH_CARD_SHOWN_KEY =
   "love:web-push-permission-card-shown:first-entry:v1";
+export const PWA_PERMISSION_GATE_KEY =
+  "love:pwa-permission-gate:first-entry:v1";
 
 const inMemoryFlags = new Set<string>();
 

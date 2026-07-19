@@ -48,10 +48,19 @@ interface HomeBucketListRow extends BucketListRow {
     | null;
 }
 
+function getLatestBucketActivity(list: HomeBucketListRow): number {
+  return Math.max(
+    new Date(list.created_at).getTime(),
+    ...(list.bucket_items ?? []).map((item) =>
+      new Date(item.created_at).getTime(),
+    ),
+  );
+}
+
 /**
  * Ana ekran için listeleri ve isteklerini tek Supabase sorgusunda özetler.
- * Son eklenen istek tüm listelerden seçilir; böylece yeni madde eski bir
- * listeye eklense bile ana ekranda görünür.
+ * En son oluşturulan veya yeni madde eklenen liste seçilir; böylece kullanıcı
+ * hangi listeyi güncellerse güncellesin ana kartta o liste görünür.
  */
 export async function getHomeBucketProgress(): Promise<BucketListWithProgress | null> {
   const supabase = await createClient();
@@ -65,17 +74,15 @@ export async function getHomeBucketProgress(): Promise<BucketListWithProgress | 
   const rows = (data ?? []) as unknown as HomeBucketListRow[];
   if (!rows.length) return null;
 
-  const row = rows[0];
+  const row = [...rows].sort(
+    (first, second) =>
+      getLatestBucketActivity(second) - getLatestBucketActivity(first),
+  )[0];
   const items = row.bucket_items ?? [];
   const totalItems = items.length;
   const completedItems = items.filter((item) => item.completed).length;
-  const latestItem = rows
-    .flatMap((listRow) =>
-      (listRow.bucket_items ?? []).map((item) => ({
-        ...item,
-        listTitle: listRow.title,
-      })),
-    )
+  const latestItem = items
+    .map((item) => ({ ...item, listTitle: row.title }))
     .sort(
       (first, second) =>
         new Date(second.created_at).getTime() -

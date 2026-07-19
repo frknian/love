@@ -252,7 +252,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
       }
     }
 
-    const albumId = String(formData.get("album-id"));
+    const albumId = String(formData.get("album-id") ?? "").trim() || null;
     const { error: insertError } = await supabase.from("memories").insert({
       album_id: albumId,
       couple_id: context.coupleId,
@@ -274,7 +274,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
     }
 
     // Albüm kapağı yalnızca fotoğraftan üretilir ve mevcut kapak ezilmez.
-    if (mediaType === "photo" && mediaPath)
+    if (albumId && mediaType === "photo" && mediaPath)
       await supabase
         .from("albums")
         .update({ cover_image: mediaPath })
@@ -440,11 +440,8 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
             className="w-full rounded-xl border border-rose-100 bg-white/80 px-3 py-2.5 text-sm outline-none focus:border-rose-300"
             defaultValue=""
             name="album-id"
-            required
           >
-            <option disabled value="">
-              Albüm seç
-            </option>
+            <option value="">Albümsüz anı</option>
             {albums.map((album) => (
               <option key={album.id} value={album.id}>
                 {album.title}
@@ -484,7 +481,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
         ) : null}
         <button
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-70"
-          disabled={isUploading || albums.length === 0}
+          disabled={isUploading}
           type="submit"
         >
           {isUploading ? (
@@ -492,11 +489,7 @@ export function MemoriesManager({ albums, context }: MemoriesManagerProps) {
           ) : (
             <ImagePlus className="size-4" />
           )}
-          {isUploading
-            ? "Kaydediliyor"
-            : albums.length === 0
-              ? "Önce albüm oluştur"
-              : "Anıyı Kaydet"}
+          {isUploading ? "Kaydediliyor" : "Anıyı Kaydet"}
         </button>
       </form>
     </div>

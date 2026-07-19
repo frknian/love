@@ -4,6 +4,7 @@ import { BellRing, LoaderCircle, MapPin } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  PWA_PERMISSION_GATE_KEY,
   WEB_PUSH_AUTO_REQUEST_KEY,
   claimBrowserPermissionPrompt,
 } from "@/lib/notifications/permission-prompt";
@@ -91,12 +92,15 @@ export function PwaPermissionGate() {
   }, [refreshVisibility]);
 
   useEffect(() => {
+    // Konum ve bildirim izinlerini yalnızca bu tarayıcıdaki ilk girişte
+    // otomatik olarak dene. Sonraki girişlerde kullanıcının daha önce verdiği
+    // karar korunur; gerekli değişiklikler Ayarlar ekranından yapılabilir.
+    if (!claimBrowserPermissionPrompt(PWA_PERMISSION_GATE_KEY)) return;
+
     let active = true;
     const provider = getPushProvider();
 
-    // Her oturum açılmış sayfada konum iznini kontrol eder. İzin daha önce
-    // verilmişse tarayıcı popup göstermez; yalnızca güncel konum akışını
-    // tetikler. Reddedilmişse kullanıcıya ayarlardan düzeltme bilgisi verilir.
+    // İlk girişte konum iznini doğrudan tarayıcı üzerinden ister.
     const locationPromise = requestLocationPermission().then((nextLocation) => {
       if (!active) return nextLocation;
       setLocationState(nextLocation);

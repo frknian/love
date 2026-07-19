@@ -7,9 +7,14 @@ import type { AppUser } from "@/types/auth";
 interface AppHeaderProps {
   user: AppUser;
   currentUserId?: string;
+  coupleNames?: string;
 }
 
-export function AppHeader({ user, currentUserId }: AppHeaderProps) {
+export function AppHeader({
+  user,
+  currentUserId,
+  coupleNames,
+}: AppHeaderProps) {
   return (
     <header className="mb-6 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -21,7 +26,7 @@ export function AppHeader({ user, currentUserId }: AppHeaderProps) {
             Bizim Hikâyemiz
           </p>
           <p className="max-w-32 truncate text-xs text-slate-400 dark:text-slate-500">
-            {user.email}
+            {coupleNames || user.name}
           </p>
         </div>
       </div>
