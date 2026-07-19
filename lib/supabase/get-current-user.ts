@@ -12,6 +12,7 @@ import type { AppUser } from "@/types/auth";
  */
 export const getCurrentAppUser = cache(
   async function getCurrentAppUser(): Promise<AppUser | null> {
+    // Paralel: JWT doğrulaması ile profil sorgusu birbirini beklemez.
     const [user, members] = await Promise.all([
       getAuthUser(),
       getCoupleMembers(),

@@ -9,20 +9,28 @@ import {
 import type { CoupleEvent, EventOccurrence } from "@/types/events";
 
 /**
+ * Yıllık tekrar eden bir etkinliğin belirli bir yıldaki karşılığı.
+ * 29 Şubat gibi tarihler artık yılı olmayan yıllarda JS Date'in kendi
+ * taşma davranışıyla 1 Mart'a kayar — bu taşma `nextOccurrenceDate` ve
+ * `occurrencesOnDay` arasında tutarlı olsun diye tek yerden hesaplanır.
+ */
+function occurrenceInYear(event: CoupleEvent, year: number): Date {
+  const original = fromIsoDate(event.eventDate);
+  if (!event.repeatYearly) return original;
+  return new Date(year, original.getMonth(), original.getDate());
+}
+
+/**
  * Yıllık tekrar eden bir etkinliğin `from` gününde ya da sonrasındaki
  * ilk gerçekleşme tarihini döner; tekrar etmeyenlerde orijinal tarih.
  */
 export function nextOccurrenceDate(event: CoupleEvent, from: Date): Date {
-  const original = fromIsoDate(event.eventDate);
-  if (!event.repeatYearly) return original;
+  if (!event.repeatYearly) return fromIsoDate(event.eventDate);
 
   const today = startOfDay(from);
-  const candidate = new Date(
-    today.getFullYear(),
-    original.getMonth(),
-    original.getDate(),
-  );
-  if (candidate < today) candidate.setFullYear(candidate.getFullYear() + 1);
+  const candidate = occurrenceInYear(event, today.getFullYear());
+  if (candidate < today)
+    return occurrenceInYear(event, today.getFullYear() + 1);
   return candidate;
 }
 
@@ -54,16 +62,11 @@ export function occurrencesOnDay(
   events: CoupleEvent[],
   day: Date,
 ): CoupleEvent[] {
-  return events.filter((event) => {
-    const original = fromIsoDate(event.eventDate);
-    if (event.repeatYearly) {
-      return (
-        original.getMonth() === day.getMonth() &&
-        original.getDate() === day.getDate()
-      );
-    }
-    return toIsoDate(original) === toIsoDate(day);
-  });
+  const targetIso = toIsoDate(day);
+  return events.filter(
+    (event) =>
+      toIsoDate(occurrenceInYear(event, day.getFullYear())) === targetIso,
+  );
 }
 
 export interface CalendarDay {

@@ -23,35 +23,37 @@ function fallbackSettings(userId: string): UserSettings {
  * uygulanmamışsa) tema/ayarlar sayfası dışındaki tüm uygulamanın
  * çökmemesi için sorgu hatalarında varsayılan ayarlara geri döner.
  */
-export const getOrCreateUserSettings = cache(async function getOrCreateUserSettings(
-  userId: string,
-): Promise<UserSettings> {
-  const supabase = await createClient();
-  const { data: existing, error: selectError } = await supabase
-    .from("user_settings")
-    .select(settingsColumns)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (selectError) {
-    console.warn(
-      "[settings] Ayarlar okunamadı, varsayılanlara dönülüyor:",
-      selectError,
-    );
-    return fallbackSettings(userId);
-  }
-  if (existing) return toUserSettings(existing as UserSettingsRow);
+export const getOrCreateUserSettings = cache(
+  async function getOrCreateUserSettings(
+    userId: string,
+  ): Promise<UserSettings> {
+    const supabase = await createClient();
+    const { data: existing, error: selectError } = await supabase
+      .from("user_settings")
+      .select(settingsColumns)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (selectError) {
+      console.warn(
+        "[settings] Ayarlar okunamadı, varsayılanlara dönülüyor:",
+        selectError,
+      );
+      return fallbackSettings(userId);
+    }
+    if (existing) return toUserSettings(existing as UserSettingsRow);
 
-  const { data: created, error: insertError } = await supabase
-    .from("user_settings")
-    .insert({ user_id: userId })
-    .select(settingsColumns)
-    .single();
-  if (insertError) {
-    console.warn(
-      "[settings] Ayarlar oluşturulamadı, varsayılanlara dönülüyor:",
-      insertError,
-    );
-    return fallbackSettings(userId);
-  }
-  return toUserSettings(created as UserSettingsRow);
-});
+    const { data: created, error: insertError } = await supabase
+      .from("user_settings")
+      .insert({ user_id: userId })
+      .select(settingsColumns)
+      .single();
+    if (insertError) {
+      console.warn(
+        "[settings] Ayarlar oluşturulamadı, varsayılanlara dönülüyor:",
+        insertError,
+      );
+      return fallbackSettings(userId);
+    }
+    return toUserSettings(created as UserSettingsRow);
+  },
+);

@@ -1,13 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { BookHeart, Plus, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { JournalDetailModal } from "@/components/journal/journal-detail-modal";
 import { JournalEntryCard } from "@/components/journal/journal-entry-card";
 import { JournalSearchBar } from "@/components/journal/journal-search-bar";
-import { JournalSheet } from "@/components/journal/journal-sheet";
 import { useToast } from "@/components/ui/toast-provider";
 import { useJournal } from "@/hooks/use-journal";
 import { toJournalEntry } from "@/lib/journal/journal-mapper";
@@ -17,6 +17,20 @@ import {
   type JournalInput,
 } from "@/services/journal/journal-service";
 import type { JournalEntry, JournalSearchField } from "@/types/journal";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const JournalSheet = dynamic(
+  () =>
+    import("@/components/journal/journal-sheet").then((m) => m.JournalSheet),
+  { ssr: false },
+);
+const JournalDetailModal = dynamic(
+  () =>
+    import("@/components/journal/journal-detail-modal").then(
+      (m) => m.JournalDetailModal,
+    ),
+  { ssr: false },
+);
 
 interface JournalWorkspaceProps {
   initialEntries: JournalEntry[];

@@ -21,6 +21,7 @@ import type {
  */
 export const getEngagementContext = cache(
   async function getEngagementContext(): Promise<EngagementContext | null> {
+    // Paralel: JWT doğrulaması ile profil sorgusu birbirini beklemez.
     const [user, members] = await Promise.all([
       getAuthUser(),
       getCoupleMembers(),

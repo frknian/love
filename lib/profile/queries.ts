@@ -1,10 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type {
-  CoupleMember,
-  CoupleStory,
-  StoryVersion,
-} from "@/types/premium";
-
+import type { CoupleMember, CoupleStory, StoryVersion } from "@/types/premium";
 
 export interface CoupleProfileData {
   coupleName: string;
@@ -67,7 +62,6 @@ export async function getProfileStats(
   };
 }
 
-
 export async function getCoupleProfileData(
   coupleId: string,
   userId: string,
@@ -75,15 +69,44 @@ export async function getCoupleProfileData(
   const supabase = await createClient();
   const [coupleResult, membersResult, storyResult, versionsResult, stats] =
     await Promise.all([
-      supabase.from("couples").select("name, anniversary_date, cover_image").eq("id", coupleId).maybeSingle(),
-      supabase.from("profiles").select("id, display_name, avatar_url").eq("couple_id", coupleId).order("created_at", { ascending: true }),
-      supabase.from("couple_stories").select("id, content, version, updated_at, updated_by").eq("couple_id", coupleId).maybeSingle(),
-      supabase.from("couple_story_versions").select("id, content, version, created_at, edited_by").eq("couple_id", coupleId).order("version", { ascending: false }).limit(8),
+      supabase
+        .from("couples")
+        .select("name, anniversary_date, cover_image")
+        .eq("id", coupleId)
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .eq("couple_id", coupleId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("couple_stories")
+        .select("id, content, version, updated_at, updated_by")
+        .eq("couple_id", coupleId)
+        .maybeSingle(),
+      supabase
+        .from("couple_story_versions")
+        .select("id, content, version, created_at, edited_by")
+        .eq("couple_id", coupleId)
+        .order("version", { ascending: false })
+        .limit(8),
       getProfileStats(coupleId, userId),
     ]);
-  if (coupleResult.error || membersResult.error || storyResult.error || versionsResult.error) throw new Error("Ortak profil bilgileri yüklenemedi.");
-  const members = (membersResult.data ?? []).map((member) => ({ id: member.id, displayName: member.display_name, avatarUrl: member.avatar_url }));
-  const memberNameById = new Map(members.map((member) => [member.id, member.displayName]));
+  if (
+    coupleResult.error ||
+    membersResult.error ||
+    storyResult.error ||
+    versionsResult.error
+  )
+    throw new Error("Ortak profil bilgileri yüklenemedi.");
+  const members = (membersResult.data ?? []).map((member) => ({
+    id: member.id,
+    displayName: member.display_name,
+    avatarUrl: member.avatar_url,
+  }));
+  const memberNameById = new Map(
+    members.map((member) => [member.id, member.displayName]),
+  );
   const story = storyResult.data;
   const derivedName = members.map((member) => member.displayName).join(" 🤍 ");
   return {
@@ -91,8 +114,24 @@ export async function getCoupleProfileData(
     coverImage: coupleResult.data?.cover_image ?? null,
     relationshipStartDate: coupleResult.data?.anniversary_date ?? null,
     members,
-    story: { id: story?.id ?? null, content: story?.content ?? "", version: story?.version ?? 0, updatedAt: story?.updated_at ?? null, updatedByName: story?.updated_by ? memberNameById.get(story.updated_by) ?? null : null },
-    storyVersions: (versionsResult.data ?? []).map((version) => ({ id: version.id, content: version.content, version: version.version, createdAt: version.created_at, editedByName: version.edited_by ? memberNameById.get(version.edited_by) ?? null : null })),
+    story: {
+      id: story?.id ?? null,
+      content: story?.content ?? "",
+      version: story?.version ?? 0,
+      updatedAt: story?.updated_at ?? null,
+      updatedByName: story?.updated_by
+        ? (memberNameById.get(story.updated_by) ?? null)
+        : null,
+    },
+    storyVersions: (versionsResult.data ?? []).map((version) => ({
+      id: version.id,
+      content: version.content,
+      version: version.version,
+      createdAt: version.created_at,
+      editedByName: version.edited_by
+        ? (memberNameById.get(version.edited_by) ?? null)
+        : null,
+    })),
     stats,
   };
 }

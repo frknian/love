@@ -1,16 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { BellOff, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { NotificationCard } from "@/components/notifications/notification-card";
-import { NotificationDetailModal } from "@/components/notifications/notification-detail-modal";
 import { useNotifications } from "@/hooks/use-notifications";
 import type {
   AppNotification,
   NotificationFilter,
 } from "@/types/notifications";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const NotificationDetailModal = dynamic(
+  () =>
+    import("@/components/notifications/notification-detail-modal").then(
+      (m) => m.NotificationDetailModal,
+    ),
+  { ssr: false },
+);
 
 interface NotificationHistoryProps {
   initialNotifications: AppNotification[];

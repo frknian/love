@@ -1,15 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { Plus, Search, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { NoteCard } from "@/components/notes/note-card";
-import { NoteSheet } from "@/components/notes/note-sheet";
 import { useNotes } from "@/hooks/use-notes";
 import { toNote } from "@/lib/note-mapper";
 import { notesService, type NoteInput } from "@/services/notes/notes-service";
 import type { Note, NoteFilter } from "@/types/notes";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const NoteSheet = dynamic(
+  () => import("@/components/notes/note-sheet").then((m) => m.NoteSheet),
+  { ssr: false },
+);
 
 interface NotesWorkspaceProps {
   initialNotes: Note[];

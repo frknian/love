@@ -26,9 +26,15 @@ export default async function ProfilePage() {
           subscriptions={[
             { table: "couples", filter: "id=eq." + context.coupleId },
             { table: "profiles", filter: "couple_id=eq." + context.coupleId },
-            { table: "couple_stories", filter: "couple_id=eq." + context.coupleId },
+            {
+              table: "couple_stories",
+              filter: "couple_id=eq." + context.coupleId,
+            },
             { table: "memories", filter: "couple_id=eq." + context.coupleId },
-            { table: "bucket_items", filter: "couple_id=eq." + context.coupleId },
+            {
+              table: "bucket_items",
+              filter: "couple_id=eq." + context.coupleId,
+            },
           ]}
         />
       ) : null}
@@ -70,14 +76,17 @@ export default async function ProfilePage() {
                   </span>
                 ))}
                 <p className="min-w-0 truncate text-sm text-slate-500 dark:text-slate-300">
-                  {profile.members.map((member) => member.displayName).join(" ve ")}
+                  {profile.members
+                    .map((member) => member.displayName)
+                    .join(" ve ")}
                 </p>
               </div>
               {profile.relationshipStartDate ? (
                 <div className="mt-5 flex items-center gap-3 rounded-2xl bg-white/65 px-4 py-3 dark:bg-slate-900/25">
                   <CalendarHeart className="size-5 shrink-0 text-rose-500" />
                   <p className="text-sm text-slate-600 dark:text-slate-200">
-                    {formatDateTr(fromIsoDate(profile.relationshipStartDate))} tarihinden beri{" "}
+                    {formatDateTr(fromIsoDate(profile.relationshipStartDate))}{" "}
+                    tarihinden beri{" "}
                     <strong className="font-bold text-rose-600 dark:text-rose-300">
                       {daysTogether} gün
                     </strong>{" "}
@@ -96,7 +105,9 @@ export default async function ProfilePage() {
                 <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                   Ortak istatistikler
                 </h2>
-                <span className="text-xs text-slate-400">Canlı güncellenir</span>
+                <span className="text-xs text-slate-400">
+                  Canlı güncellenir
+                </span>
               </div>
               <ProfileStatsGrid stats={profile.stats} />
             </section>

@@ -35,6 +35,10 @@ export const getAuthUser = cache(async function getAuthUser() {
  * ve benzeri yardımcılar aynı sonucu paylaşır.
  */
 export const getCoupleMembers = cache(async function getCoupleMembers() {
+  // Bilinçli olarak `getAuthUser()` beklenmez: RLS zaten yalnızca çağıranın
+  // kendi çiftinin satırlarını döndürür (oturum yoksa boş küme). Böylece
+  // kimlik doğrulama ile profil sorgusu paralel çalışır ve her sayfa
+  // yüklemesinden bir tam gidiş-dönüş tasarruf edilir.
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")

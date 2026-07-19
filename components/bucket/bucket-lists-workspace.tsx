@@ -1,12 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { ListChecks, Plus, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { BucketListCard } from "@/components/bucket/bucket-list-card";
 import { BucketListDetail } from "@/components/bucket/bucket-list-detail";
-import { BucketListSheet } from "@/components/bucket/bucket-list-sheet";
 import { useToast } from "@/components/ui/toast-provider";
 import { useBucketList } from "@/hooks/use-bucket-list";
 import { withProgress } from "@/lib/bucket/bucket-mapper";
@@ -15,6 +16,15 @@ import {
   type BucketListInput,
 } from "@/services/bucket/bucket-service";
 import type { BucketItem, BucketList } from "@/types/bucket";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const BucketListSheet = dynamic(
+  () =>
+    import("@/components/bucket/bucket-list-sheet").then(
+      (m) => m.BucketListSheet,
+    ),
+  { ssr: false },
+);
 
 interface BucketListsWorkspaceProps {
   initialLists: BucketList[];

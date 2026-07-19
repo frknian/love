@@ -2,8 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
+import { memo } from "react";
 
 import { LiveRemaining } from "@/components/countdowns/live-remaining";
+import { useNow } from "@/hooks/use-now";
 import {
   getProgressPercent,
   getRemaining,
@@ -13,15 +15,13 @@ import type { Countdown } from "@/types/countdowns";
 
 interface CountdownCardProps {
   countdown: Countdown;
-  now: Date;
   onDelete?: (countdown: Countdown) => void;
 }
 
-export function CountdownCard({
-  countdown,
-  now,
-  onDelete,
-}: CountdownCardProps) {
+function CountdownCardComponent({ countdown, onDelete }: CountdownCardProps) {
+  // İlerleme çubuğu saniyelik hassasiyet gerektirmez; kaba bir tick yeterli.
+  // Saniyelik güncelleme yalnızca <LiveRemaining /> içinde yapılır.
+  const now = useNow(30_000);
   const progress = getProgressPercent(countdown, now);
   const remaining = getRemaining(countdown.targetDate, now);
 
@@ -70,11 +70,7 @@ export function CountdownCard({
         <p className="mt-0.5 text-xs text-slate-400">
           {formatDateTr(new Date(countdown.targetDate))}
         </p>
-        <LiveRemaining
-          className="mt-3"
-          now={now}
-          targetDate={countdown.targetDate}
-        />
+        <LiveRemaining className="mt-3" targetDate={countdown.targetDate} />
         <div
           aria-valuemax={100}
           aria-valuemin={0}
@@ -98,3 +94,5 @@ export function CountdownCard({
     </motion.article>
   );
 }
+
+export const CountdownCard = memo(CountdownCardComponent);

@@ -1,13 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { Hourglass, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { CapsuleContentModal } from "@/components/capsule/capsule-content-modal";
 import { CapsuleLockedCard } from "@/components/capsule/capsule-locked-card";
-import { CapsuleSheet } from "@/components/capsule/capsule-sheet";
-import { CapsuleUnlockModal } from "@/components/capsule/capsule-unlock-modal";
 import { useToast } from "@/components/ui/toast-provider";
 import { useCapsule } from "@/hooks/use-capsule";
 import { useNow } from "@/hooks/use-now";
@@ -17,6 +16,27 @@ import {
   type CapsuleInput,
 } from "@/services/capsule/capsule-service";
 import type { CapsuleAttachment, TimeCapsuleMeta } from "@/types/capsule";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const CapsuleSheet = dynamic(
+  () =>
+    import("@/components/capsule/capsule-sheet").then((m) => m.CapsuleSheet),
+  { ssr: false },
+);
+const CapsuleContentModal = dynamic(
+  () =>
+    import("@/components/capsule/capsule-content-modal").then(
+      (m) => m.CapsuleContentModal,
+    ),
+  { ssr: false },
+);
+const CapsuleUnlockModal = dynamic(
+  () =>
+    import("@/components/capsule/capsule-unlock-modal").then(
+      (m) => m.CapsuleUnlockModal,
+    ),
+  { ssr: false },
+);
 
 interface CapsulesWorkspaceProps {
   initialCapsules: TimeCapsuleMeta[];

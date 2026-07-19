@@ -1,11 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowUpDown, Plus, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { BucketItemRow } from "@/components/bucket/bucket-item-row";
-import { BucketItemSheet } from "@/components/bucket/bucket-item-sheet";
 import { getBucketColorDefinition } from "@/lib/bucket/bucket-catalog";
 import { useToast } from "@/components/ui/toast-provider";
 import {
@@ -13,6 +14,15 @@ import {
   type BucketItemInput,
 } from "@/services/bucket/bucket-service";
 import type { BucketItem, BucketListWithProgress } from "@/types/bucket";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const BucketItemSheet = dynamic(
+  () =>
+    import("@/components/bucket/bucket-item-sheet").then(
+      (m) => m.BucketItemSheet,
+    ),
+  { ssr: false },
+);
 
 interface BucketListDetailProps {
   list: BucketListWithProgress;

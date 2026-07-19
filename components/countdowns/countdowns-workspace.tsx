@@ -1,19 +1,28 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AnimatePresence } from "framer-motion";
 import { Hourglass, Plus, WifiOff } from "lucide-react";
 import { useState } from "react";
 
 import { CountdownCard } from "@/components/countdowns/countdown-card";
-import { CountdownSheet } from "@/components/countdowns/countdown-sheet";
 import { useCountdowns } from "@/hooks/use-countdowns";
-import { useNow } from "@/hooks/use-now";
 import { toCountdown } from "@/lib/countdowns/countdown-mapper";
 import {
   countdownsService,
   type CountdownInput,
 } from "@/services/countdowns/countdowns-service";
 import type { Countdown } from "@/types/countdowns";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const CountdownSheet = dynamic(
+  () =>
+    import("@/components/countdowns/countdown-sheet").then(
+      (m) => m.CountdownSheet,
+    ),
+  { ssr: false },
+);
 
 interface CountdownsWorkspaceProps {
   initialCountdowns: Countdown[];
@@ -30,7 +39,6 @@ export function CountdownsWorkspace({
     initialCountdowns,
     coupleId,
   });
-  const now = useNow(1000);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -77,7 +85,6 @@ export function CountdownsWorkspace({
               <CountdownCard
                 countdown={countdown}
                 key={countdown.id}
-                now={now}
                 onDelete={handleDelete}
               />
             ))}

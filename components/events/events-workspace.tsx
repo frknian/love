@@ -1,14 +1,13 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Plus, WifiOff } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CalendarMonthView } from "@/components/events/calendar-month-view";
 import { CalendarWeekView } from "@/components/events/calendar-week-view";
-import { EventDetailModal } from "@/components/events/event-detail-modal";
 import { EventListView } from "@/components/events/event-list-view";
-import { EventSheet } from "@/components/events/event-sheet";
 import { Card } from "@/components/ui/card";
 import { useEvents } from "@/hooks/use-events";
 import {
@@ -25,6 +24,19 @@ import {
   type EventInput,
 } from "@/services/events/events-service";
 import type { CalendarView, CoupleEvent } from "@/types/events";
+
+// Yalnızca kullanıcı açtığında yüklenir; ilk paket boyutunu küçültür.
+const EventSheet = dynamic(
+  () => import("@/components/events/event-sheet").then((m) => m.EventSheet),
+  { ssr: false },
+);
+const EventDetailModal = dynamic(
+  () =>
+    import("@/components/events/event-detail-modal").then(
+      (m) => m.EventDetailModal,
+    ),
+  { ssr: false },
+);
 
 interface EventsWorkspaceProps {
   initialEvents: CoupleEvent[];

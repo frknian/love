@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import type { NavigationItem } from "@/types/navigation";
@@ -32,7 +32,15 @@ const navigationItems: NavigationItem[] = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  // İlk açılıştan sonra bağlı kalır ki kapanış animasyonu oynayabilsin.
+  const [hasOpenedMore, setHasOpenedMore] = useState(false);
+
+  const openMore = useCallback(() => {
+    setHasOpenedMore(true);
+    setIsMoreOpen(true);
+  }, []);
+  const closeMore = useCallback(() => setIsMoreOpen(false), []);
 
   return (
     <>
@@ -66,18 +74,15 @@ export function BottomNavigation() {
         <button
           aria-label="Diğer modüller"
           className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-medium text-slate-400 transition-colors hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400"
-          onClick={() => setIsMoreMenuOpen(true)}
+          onClick={openMore}
           type="button"
         >
           <MoreHorizontal aria-hidden="true" className="size-[19px]" />
           <span className="truncate">Diğer</span>
         </button>
       </nav>
-      {isMoreMenuOpen ? (
-        <MoreMenuSheet
-          isOpen={isMoreMenuOpen}
-          onClose={() => setIsMoreMenuOpen(false)}
-        />
+      {hasOpenedMore ? (
+        <MoreMenuSheet isOpen={isMoreOpen} onClose={closeMore} />
       ) : null}
     </>
   );

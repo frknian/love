@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const moreLinks = [
   { href: "/notlar", label: "Notlar", icon: NotebookPen },
@@ -104,13 +104,4 @@ export function MoreMenuSheet({
       ) : null}
     </AnimatePresence>
   );
-}
-
-export function useMoreMenu() {
-  const [isOpen, setIsOpen] = useState(false);
-  return {
-    isOpen,
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
-  };
 }

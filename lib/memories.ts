@@ -23,10 +23,12 @@ function toAlbum(record: {
 }
 
 export async function getMemoriesContext(): Promise<MemoriesContext | null> {
-  const user = await getAuthUser();
+  const [user, members] = await Promise.all([
+    getAuthUser(),
+    getCoupleMembers(),
+  ]);
   if (!user) return null;
 
-  const members = await getCoupleMembers();
   const me = members.find((member) => member.id === user.id);
   const partner = members.find((member) => member.id !== user.id);
   return me

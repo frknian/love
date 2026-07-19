@@ -1,19 +1,21 @@
 "use client";
 
+import { useNow } from "@/hooks/use-now";
 import { getRemaining } from "@/lib/countdowns/countdown-math";
 
 interface LiveRemainingProps {
   targetDate: string;
-  now: Date;
   className?: string;
 }
 
-/** Gün / saat / dakika / saniye olarak canlı kalan süre. */
-export function LiveRemaining({
-  targetDate,
-  now,
-  className,
-}: LiveRemainingProps) {
+/**
+ * Gün / saat / dakika / saniye olarak canlı kalan süre.
+ * Saniyelik tick bilinçli olarak burada tutulur: üst bileşenler (kart,
+ * çalışma alanı) saniyede bir yeniden render edilmesin diye yalnızca bu
+ * küçük parça güncellenir.
+ */
+export function LiveRemaining({ targetDate, className }: LiveRemainingProps) {
+  const now = useNow(1000);
   const remaining = getRemaining(targetDate, now);
 
   if (remaining.isPast) {
